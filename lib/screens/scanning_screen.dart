@@ -80,10 +80,37 @@ class _ScanningScreenState extends State<ScanningScreen>
           _navigateToComplete();
           break;
         case 'onScanError':
-          debugPrint('Scan error: ${call.arguments}');
+          final error = call.arguments is Map ? call.arguments['error'] : call.arguments.toString();
+          debugPrint('Scan error: $error');
+          if (mounted) {
+            setState(() {
+              _isScanning = false;
+            });
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('AR Error'),
+                content: Text(
+                  'Failed to start AR camera.\n\nDetails: $error\n\nYour device might not support ARCore or camera permissions are missing.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.pop(context); // Go back to Home
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
           break;
       }
     });
+
+    // Automatically trigger scanning session on native view
+    _startScanning();
   }
 
   Future<void> _startScanning() async {

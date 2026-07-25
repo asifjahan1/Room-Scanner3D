@@ -60,6 +60,7 @@ class ArCoreScannerPlatformView(
 
     // AR Session & Camera Texture
     private var isScanning = false
+    private var isSessionResumed = false
     private var arSession: Session? = null
     private var cameraTextureId: Int = -1
     private var backgroundRenderer: CameraBackgroundRenderer? = null
@@ -73,14 +74,21 @@ class ArCoreScannerPlatformView(
     init {
         channel = MethodChannel(messenger, "com.app.liddar/arcore_view_$viewId")
 
-        // Configure GLSurfaceView for OpenGL ES 2.0
+        // Crucial: Set Z-Order Media Overlay so GLSurfaceView renders visible over Flutter's view hierarchy
         glSurfaceView.setEGLContextClientVersion(2)
         glSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+        glSurfaceView.setZOrderMediaOverlay(true)
         glSurfaceView.setRenderer(this)
         glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 
-        containerView.addView(glSurfaceView)
-        containerView.addView(overlayView)
+        containerView.addView(glSurfaceView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+        containerView.addView(overlayView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
 
         setupMethodChannel()
         initializeARCore()
@@ -90,6 +98,7 @@ class ArCoreScannerPlatformView(
 
     override fun dispose() {
         isScanning = false
+        isSessionResumed = false
         glSurfaceView.onPause()
         try {
             arSession?.pause()
@@ -125,12 +134,12 @@ class ArCoreScannerPlatformView(
 
     private fun initializeARCore() {
         try {
-            val installStatus = ArCoreApk.getInstance().requestInstall(null, true)
-            if (installStatus == ArCoreApk.InstallStatus.INSTALLED) {
-                createARSession()
-            }
-        } catch (e: UnavailableException) {
-            channel.invokeMethod("onScanError", mapOf("error" to "ARCore not available: ${e.message}"))
+            // Skip requestInstall since we don't have an Activity context readily available, 
+            // and try to create the session directly.
+            createARSession()
+        } catch (e: Exception) {
+            android.util.Log.e("ArCoreScannerView", "ARCore init failed", e)
+            channel.invokeMethod("onScanError", mapOf("error" to "ARCore init error: ${e.message}"))
         }
     }
 
@@ -148,15 +157,21 @@ class ArCoreScannerPlatformView(
                     focusMode = Config.FocusMode.AUTO
                 }
                 configure(config)
+                resume()
+                isSessionResumed = true
             }
         } catch (e: Exception) {
+            android.util.Log.e("ArCoreScannerView", "Failed to create AR session", e)
             channel.invokeMethod("onScanError", mapOf("error" to "Failed to create AR session: ${e.message}"))
         }
     }
 
     private fun startScan(result: MethodChannel.Result) {
         try {
-            arSession?.resume()
+            if (!isSessionResumed) {
+                arSession?.resume()
+                isSessionResumed = true
+            }
             glSurfaceView.onResume()
             isScanning = true
             detectedPlanes.clear()
@@ -181,35 +196,29 @@ class ArCoreScannerPlatformView(
             channel.invokeMethod("onScanComplete", scanResult)
         }
 
-        try {
-            arSession?.pause()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
         result.success(true)
     }
 
     private fun cancelScan(result: MethodChannel.Result) {
         isScanning = false
         overlayView.stopScanning()
-        try {
-            arSession?.pause()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
         result.success(true)
     }
 
     // --- GLSurfaceView.Renderer Methods ---
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        GLES20.glClearColor(0.1f, 0.1f, 0.12f, 1.0f)
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         backgroundRenderer = CameraBackgroundRenderer()
         backgroundRenderer?.createOnGlThread()
         cameraTextureId = backgroundRenderer?.textureId ?: -1
 
-        if (cameraTextureId != -1) {
-            arSession?.setCameraTextureName(cameraTextureId)
+        if (cameraTextureId != -1 && arSession != null) {
+            try {
+                arSession?.setCameraTextureName(cameraTextureId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -222,14 +231,18 @@ class ArCoreScannerPlatformView(
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
         val session = arSession ?: return
-        if (!isScanning) return
 
         try {
-            session.setCameraTextureName(cameraTextureId)
+            if (cameraTextureId != -1) {
+                session.setCameraTextureName(cameraTextureId)
+            }
             val frame = session.update()
 
-            // 1. Draw live camera background
+            // 1. ALWAYS draw live camera background (so camera is NEVER black!)
             backgroundRenderer?.draw(frame)
+
+            // If user hasn't tapped start scan yet, camera is still live
+            if (!isScanning) return
 
             // 2. Process tracked planes in real time
             val updatedPlanes = frame.getUpdatedTrackables(Plane::class.java)
@@ -268,7 +281,7 @@ class ArCoreScannerPlatformView(
             Plane.Type.HORIZONTAL_UPWARD_FACING -> "floor"
             Plane.Type.HORIZONTAL_DOWNWARD_FACING -> "ceiling"
             Plane.Type.VERTICAL -> "wall"
-            null -> "unknown"
+            else -> "unknown"
         }
 
         val planeData = DetectedPlaneData(
@@ -390,7 +403,7 @@ class ArCoreScannerPlatformView(
 }
 
 /**
- * Renders ARCore camera feed as background texture in OpenGL ES 2.0
+ * Renders ARCore camera feed as background texture in OpenGL ES 2.0 with transformed UV coordinates
  */
 class CameraBackgroundRenderer {
     var textureId: Int = -1
@@ -423,6 +436,10 @@ class CameraBackgroundRenderer {
             ))
             position(0)
         }
+
+    private val quadTransformedTexCoords: FloatBuffer = ByteBuffer.allocateDirect(4 * 2 * 4)
+        .order(ByteOrder.nativeOrder())
+        .asFloatBuffer()
 
     fun createOnGlThread() {
         val textures = IntArray(1)
@@ -470,6 +487,10 @@ class CameraBackgroundRenderer {
     fun draw(frame: Frame) {
         if (textureId == -1 || program == 0) return
 
+        if (frame.hasDisplayGeometryChanged()) {
+            frame.transformDisplayUvCoords(quadTexCoords, quadTransformedTexCoords)
+        }
+
         GLES20.glDisable(GLES20.GL_DEPTH_TEST)
         GLES20.glDepthMask(false)
 
@@ -481,7 +502,8 @@ class CameraBackgroundRenderer {
         GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_FLOAT, false, 0, quadCoords)
         GLES20.glEnableVertexAttribArray(aPosition)
 
-        GLES20.glVertexAttribPointer(aTexCoord, 2, GLES20.GL_FLOAT, false, 0, quadTexCoords)
+        quadTransformedTexCoords.position(0)
+        GLES20.glVertexAttribPointer(aTexCoord, 2, GLES20.GL_FLOAT, false, 0, quadTransformedTexCoords)
         GLES20.glEnableVertexAttribArray(aTexCoord)
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
