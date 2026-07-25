@@ -1,8 +1,15 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:uuid/uuid.dart';
 import '../theme/app_theme.dart';
 import '../models/room_scan.dart';
-import '../services/floor_plan_generator.dart';
+import '../controllers/floor_plan_controller.dart';
+import '../controllers/export_controller.dart';
+import '../widgets/floor_plan_editor/wall_handle_painter.dart';
+import '../widgets/floor_plan_editor/dimension_label_widget.dart';
+import '../widgets/floor_plan_editor/toolbar_widget.dart';
+import '../widgets/floor_plan_editor/door_widget.dart';
+import '../core/routes/app_routes.dart';
 
 class FloorPlanScreen extends StatefulWidget {
   final String roomLabel;
@@ -18,58 +25,154 @@ class FloorPlanScreen extends StatefulWidget {
   State<FloorPlanScreen> createState() => _FloorPlanScreenState();
 }
 
-class _FloorPlanScreenState extends State<FloorPlanScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _fadeAnimation;
-  bool _showDimensions = true;
-  bool _isMetric = true;
-
-  // Demo floor plan data
-  late List<Point2D> _floorPlanPoints;
-  late double _area;
-  late double _perimeter;
+class _FloorPlanScreenState extends State<FloorPlanScreen> {
+  final FloorPlanController controller = Get.find<FloorPlanController>();
+  final ExportController exportController = Get.put(ExportController());
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
-    );
-    _animController.forward();
+    final effectiveScan = widget.roomScan ?? (Get.arguments as RoomScan?) ?? _createDemoScan();
+    controller.loadFromScan(effectiveScan);
+    controller.roomLabel.value = widget.roomLabel;
+  }
 
-    // Generate demo data or use real scan data
-    if (widget.roomScan != null) {
-      _floorPlanPoints = FloorPlanGenerator.generateFloorPlan(widget.roomScan!);
-      _area = widget.roomScan!.area ?? FloorPlanGenerator.calculateArea(_floorPlanPoints);
-      _perimeter = widget.roomScan!.perimeter ?? FloorPlanGenerator.calculatePerimeter(_floorPlanPoints);
-    } else {
-      _generateDemoData();
+  RoomScan _createDemoScan() {
+    const uuid = Uuid();
+    return RoomScan(
+      id: uuid.v4(),
+      label: widget.roomLabel,
+      roomType: RoomType.custom,
+      scannedAt: DateTime.now(),
+      walls: const [
+        WallSegment(start: Point3D(-2.0, 0.0, -1.5), end: Point3D(2.0, 0.0, -1.5)),
+        WallSegment(start: Point3D(2.0, 0.0, -1.5), end: Point3D(2.0, 0.0, 1.5)),
+        WallSegment(start: Point3D(2.0, 0.0, 1.5), end: Point3D(-2.0, 0.0, 1.5)),
+        WallSegment(start: Point3D(-2.0, 0.0, 1.5), end: Point3D(-2.0, 0.0, -1.5)),
+      ],
+      area: 12.0,
+      perimeter: 14.0,
+    );
+  }
+
+  void _handleCanvasTap(Offset localPosition, Size canvasSize) {
+    final cx = canvasSize.width / 2;
+    final cy = canvasSize.height / 2;
+    const scale = 40.0;
+
+    Offset toCanvas(double x, double y) => Offset(cx + x * scale, cy + y * scale);
+
+    // Check if tap hit any wall
+    for (final wall in controller.walls) {
+      final p1 = toCanvas(wall.start.x, wall.start.y);
+      final p2 = toCanvas(wall.end.x, wall.end.y);
+      final dist = _pointToSegmentDistance(localPosition, p1, p2);
+      if (dist < 20.0) {
+        controller.selectElement(wall.id);
+        return;
+      }
     }
+
+    // Check if tap hit any opening
+    for (final op in controller.openings) {
+      final pos = toCanvas(op.x, op.y);
+      if ((localPosition - pos).distance < 24.0) {
+        controller.selectElement(op.id);
+        return;
+      }
+    }
+
+    // Otherwise deselect
+    controller.deselectAll();
   }
 
-  void _generateDemoData() {
-    // Demo room shape
-    _floorPlanPoints = const [
-      Point2D(0, 0),
-      Point2D(4.5, 0),
-      Point2D(4.5, 3.2),
-      Point2D(2.8, 3.2),
-      Point2D(2.8, 5.0),
-      Point2D(0, 5.0),
-    ];
-    _area = FloorPlanGenerator.calculateArea(_floorPlanPoints);
-    _perimeter = FloorPlanGenerator.calculatePerimeter(_floorPlanPoints);
+  double _pointToSegmentDistance(Offset p, Offset a, Offset b) {
+    final l2 = (b - a).distanceSquared;
+    if (l2 == 0) return (p - a).distance;
+    var t = ((p.dx - a.dx) * (b.dx - a.dx) + (p.dy - a.dy) * (b.dy - a.dy)) / l2;
+    t = t.clamp(0.0, 1.0);
+    final projection = Offset(a.dx + t * (b.dx - a.dx), a.dy + t * (b.dy - a.dy));
+    return (p - projection).distance;
   }
 
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
+  void _showExportModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXLarge)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Export & Share Floor Plan',
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Choose your preferred industry-standard format:',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            _buildExportOption(
+              icon: Icons.picture_as_pdf_outlined,
+              title: 'PDF Blueprint Summary',
+              subtitle: 'Comprehensive document with calculation tables and layout',
+              onTap: () {
+                Navigator.pop(ctx);
+                exportController.setFormat('pdf');
+                exportController.exportAndShare(
+                  widget.roomScan ?? _createDemoScan(),
+                  isMetric: controller.isMetric.value,
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildExportOption(
+              icon: Icons.data_object_outlined,
+              title: 'JSON Raw Geometry',
+              subtitle: 'Complete coordinates, wall thicknesses and 3D mesh vectors',
+              onTap: () {
+                Navigator.pop(ctx);
+                exportController.setFormat('json');
+                exportController.exportAndShare(widget.roomScan ?? _createDemoScan());
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryBlue.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        ),
+        child: Icon(icon, color: AppTheme.primaryBlue),
+      ),
+      title: Text(title, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: const TextStyle(color: AppTheme.textTertiary, fontSize: 12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        side: const BorderSide(color: AppTheme.borderDark),
+      ),
+      tileColor: AppTheme.bgSurface,
+      onTap: onTap,
+    );
   }
 
   @override
@@ -80,500 +183,161 @@ class _FloorPlanScreenState extends State<FloorPlanScreen>
         backgroundColor: AppTheme.bgDark,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+          onPressed: () => Get.offAllNamed(AppRoutes.home),
           icon: const Icon(Icons.close, color: AppTheme.textPrimary),
+          tooltip: 'Close Editor',
         ),
-        title: Text(
-          widget.roomLabel,
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: Obx(() => Text(
+              controller.roomLabel.value,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            )),
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () {
-              // Export options
-              _showExportDialog();
-            },
-            icon: const Icon(Icons.share, color: AppTheme.textPrimary),
+            onPressed: () => _showExportModal(context),
+            icon: const Icon(Icons.ios_share, color: AppTheme.textPrimary),
+            tooltip: 'Export',
           ),
           IconButton(
-            onPressed: () {
-              setState(() => _showDimensions = !_showDimensions);
-            },
-            icon: Icon(
-              _showDimensions ? Icons.straighten : Icons.straighten_outlined,
-              color: _showDimensions
-                  ? AppTheme.accentTeal
-                  : AppTheme.textSecondary,
-            ),
+            onPressed: () => controller.showDimensions.toggle(),
+            icon: Obx(() => Icon(
+                  controller.showDimensions.value ? Icons.straighten : Icons.straighten_outlined,
+                  color: controller.showDimensions.value ? AppTheme.accentTeal : AppTheme.textSecondary,
+                )),
+            tooltip: 'Toggle Dimensions',
           ),
         ],
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            // Unit toggle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildUnitToggle('Metric (m)', true),
-                  const SizedBox(width: 8),
-                  _buildUnitToggle('Imperial (ft)', false),
-                ],
-              ),
-            ),
-
-            // Floor Plan View
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.bgCard,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-                    border: Border.all(color: AppTheme.borderDark),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return CustomPaint(
-                          size: Size(constraints.maxWidth, constraints.maxHeight),
-                          painter: _FloorPlanPainter(
-                            points: _floorPlanPoints,
-                            showDimensions: _showDimensions,
-                            isMetric: _isMetric,
-                            roomLabel: widget.roomLabel,
-                          ),
-                        );
-                      },
+      body: Stack(
+        children: [
+          // Main Interactive Editing Canvas
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final size = Size(constraints.maxWidth, constraints.maxHeight);
+                return GestureDetector(
+                  onTapUp: (details) => _handleCanvasTap(details.localPosition, size),
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                    decoration: BoxDecoration(
+                      color: AppTheme.bgCard,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                      border: Border.all(color: AppTheme.borderDark),
                     ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Room Info Cards
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildInfoCard(
-                      'Area',
-                      _isMetric
-                          ? '${_area.toStringAsFixed(1)} m²'
-                          : '${(_area * 10.7639).toStringAsFixed(1)} ft²',
-                      Icons.square_foot,
-                      AppTheme.primaryBlue,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildInfoCard(
-                      'Perimeter',
-                      _isMetric
-                          ? '${_perimeter.toStringAsFixed(1)} m'
-                          : '${(_perimeter * 3.28084).toStringAsFixed(1)} ft',
-                      Icons.border_all,
-                      AppTheme.accentTeal,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildInfoCard(
-                      'Walls',
-                      '${_floorPlanPoints.length}',
-                      Icons.border_left,
-                      AppTheme.wireframeGlow,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Action Buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      },
-                      child: Container(
-                        height: 50,
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.primaryGradient,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusMedium),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.doneButtonBg.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                      child: Obx(() => CustomPaint(
+                            painter: WallHandlePainter(
+                              walls: controller.walls.toList(),
+                              openings: controller.openings.toList(),
+                              selectedElementId: controller.selectedElementId.value,
+                              showDimensions: controller.showDimensions.value,
+                              showGrid: controller.showGrid.value,
+                              isMetric: controller.isMetric.value,
                             ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Save & Done',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                          )),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Floating Top Dimension Bar
+          Positioned(
+            top: 28,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Obx(() => DimensionLabelWidget(
+                    areaSqMeters: controller.totalArea,
+                    perimeterMeters: controller.totalPerimeter,
+                    isMetric: controller.isMetric.value,
+                    onToggleUnits: () => controller.isMetric.toggle(),
+                  )),
+            ),
+          ),
+
+          // Opening Configuration Panel (if an opening is currently selected)
+          Obx(() {
+            final selId = controller.selectedElementId.value;
+            final opening = controller.openings.firstWhereOrNull((o) => o.id == selId);
+            if (opening == null) return const SizedBox.shrink();
+            return Positioned(
+              bottom: 140,
+              left: 24,
+              right: 24,
+              child: DoorWidget(
+                opening: opening,
+                onWidthChanged: (val) {
+                  opening.width = val;
+                  controller.openings.refresh();
+                },
+                onDelete: () => controller.deleteOpening(opening.id),
+              ),
+            );
+          }),
+
+          // Floating Editor Toolbar & Save Action
+          Positioned(
+            bottom: 24,
+            left: 0,
+            right: 0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Obx(() => ToolbarWidget(
+                      canUndo: controller.canUndo.value,
+                      canRedo: controller.canRedo.value,
+                      hasSelection: controller.selectedElementId.value != null,
+                      showGrid: controller.showGrid.value,
+                      onUndo: controller.undo,
+                      onRedo: controller.redo,
+                      onAddDoor: () => controller.addDoor(controller.selectedElementId.value),
+                      onAddWindow: () => controller.addWindow(controller.selectedElementId.value),
+                      onSplitWall: () {
+                        final id = controller.selectedElementId.value;
+                        if (id != null) controller.splitWall(id);
+                      },
+                      onDeleteSelected: () {
+                        final id = controller.selectedElementId.value;
+                        if (id != null) controller.deleteWall(id);
+                      },
+                      onToggleGrid: () => controller.showGrid.toggle(),
+                      onExport: () => _showExportModal(context),
+                    )),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ElevatedButton(
+                    onPressed: () => Get.offAllNamed(AppRoutes.home),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      backgroundColor: AppTheme.primaryBlue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Text(
+                      'Save & Done',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUnitToggle(String label, bool isMetric) {
-    final isSelected = _isMetric == isMetric;
-    return GestureDetector(
-      onTap: () => setState(() => _isMetric = isMetric),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryBlue.withValues(alpha: 0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
-          border: Border.all(
-            color: isSelected
-                ? AppTheme.primaryBlue
-                : AppTheme.borderDark,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? AppTheme.primaryBlue : AppTheme.textSecondary,
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(
-      String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.bgCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        border: Border.all(color: AppTheme.borderDark),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppTheme.textTertiary,
-              fontSize: 11,
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  void _showExportDialog() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.bgCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.borderDark,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Export Floor Plan',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildExportOption(Icons.picture_as_pdf, 'PDF', 'Document format'),
-              _buildExportOption(Icons.image, 'PNG Image', 'High-res image'),
-              _buildExportOption(Icons.view_in_ar, 'USDZ', '3D model format'),
-              _buildExportOption(Icons.data_object, 'JSON', 'Raw data'),
-              SizedBox(height: MediaQuery.of(context).padding.bottom),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildExportOption(IconData icon, String title, String subtitle) {
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        ),
-        child: Icon(icon, color: AppTheme.primaryBlue),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: AppTheme.textPrimary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: AppTheme.textTertiary, fontSize: 12),
-      ),
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
-        color: AppTheme.textTertiary,
-        size: 16,
-      ),
-      onTap: () => Navigator.pop(context),
-    );
-  }
-}
-
-/// Floor plan painter
-class _FloorPlanPainter extends CustomPainter {
-  final List<Point2D> points;
-  final bool showDimensions;
-  final bool isMetric;
-  final String roomLabel;
-
-  _FloorPlanPainter({
-    required this.points,
-    required this.showDimensions,
-    required this.isMetric,
-    required this.roomLabel,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (points.isEmpty) return;
-
-    final padding = 60.0;
-
-    // Calculate bounds
-    double minX = double.infinity, maxX = double.negativeInfinity;
-    double minY = double.infinity, maxY = double.negativeInfinity;
-    for (final p in points) {
-      if (p.x < minX) minX = p.x;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.y > maxY) maxY = p.y;
-    }
-
-    final rangeX = maxX - minX;
-    final rangeY = maxY - minY;
-    if (rangeX == 0 && rangeY == 0) return;
-
-    final availW = size.width - 2 * padding;
-    final availH = size.height - 2 * padding;
-    final scale = min(
-      availW / (rangeX == 0 ? 1 : rangeX),
-      availH / (rangeY == 0 ? 1 : rangeY),
-    );
-
-    final offsetX = padding + (availW - rangeX * scale) / 2;
-    final offsetY = padding + (availH - rangeY * scale) / 2;
-
-    Offset toCanvas(Point2D p) {
-      return Offset(
-        offsetX + (p.x - minX) * scale,
-        offsetY + (p.y - minY) * scale,
-      );
-    }
-
-    // Fill
-    final fillPaint = Paint()
-      ..color = AppTheme.primaryBlue.withValues(alpha: 0.08)
-      ..style = PaintingStyle.fill;
-
-    final fillPath = Path();
-    final canvasPoints = points.map(toCanvas).toList();
-    fillPath.moveTo(canvasPoints.first.dx, canvasPoints.first.dy);
-    for (int i = 1; i < canvasPoints.length; i++) {
-      fillPath.lineTo(canvasPoints[i].dx, canvasPoints[i].dy);
-    }
-    fillPath.close();
-    canvas.drawPath(fillPath, fillPaint);
-
-    // Walls
-    final wallPaint = Paint()
-      ..color = AppTheme.textPrimary
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawPath(fillPath, wallPaint);
-
-    // Corner dots
-    final dotPaint = Paint()
-      ..color = AppTheme.primaryBlue
-      ..style = PaintingStyle.fill;
-
-    for (final cp in canvasPoints) {
-      canvas.drawCircle(cp, 4, dotPaint);
-    }
-
-    // Dimensions
-    if (showDimensions) {
-      for (int i = 0; i < points.length; i++) {
-        final j = (i + 1) % points.length;
-        final dx = points[j].x - points[i].x;
-        final dy = points[j].y - points[i].y;
-        final length = sqrt(dx * dx + dy * dy);
-
-        final mid = Offset(
-          (canvasPoints[i].dx + canvasPoints[j].dx) / 2,
-          (canvasPoints[i].dy + canvasPoints[j].dy) / 2,
-        );
-
-        // Perpendicular offset for label
-        final angle = atan2(
-          canvasPoints[j].dy - canvasPoints[i].dy,
-          canvasPoints[j].dx - canvasPoints[i].dx,
-        );
-        final labelOffset = Offset(
-          -sin(angle) * 20,
-          cos(angle) * 20,
-        );
-
-        final String label;
-        if (isMetric) {
-          label = '${length.toStringAsFixed(2)}m';
-        } else {
-          label = '${(length * 3.28084).toStringAsFixed(1)}ft';
-        }
-
-        final textPainter = TextPainter(
-          text: TextSpan(
-            text: label,
-            style: TextStyle(
-              color: AppTheme.accentTeal,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-
-        // Background for label
-        final labelRect = Rect.fromCenter(
-          center: mid + labelOffset,
-          width: textPainter.width + 12,
-          height: textPainter.height + 6,
-        );
-
-        final bgPaint = Paint()
-          ..color = AppTheme.bgCard
-          ..style = PaintingStyle.fill;
-        final bgBorder = Paint()
-          ..color = AppTheme.borderDark
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1;
-
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
-          bgPaint,
-        );
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
-          bgBorder,
-        );
-
-        textPainter.paint(
-          canvas,
-          Offset(
-            labelRect.left + 6,
-            labelRect.top + 3,
-          ),
-        );
-      }
-    }
-
-    // Room label in center
-    final centerX = canvasPoints.fold(0.0, (sum, p) => sum + p.dx) / canvasPoints.length;
-    final centerY = canvasPoints.fold(0.0, (sum, p) => sum + p.dy) / canvasPoints.length;
-
-    final labelPainter = TextPainter(
-      text: TextSpan(
-        text: roomLabel,
-        style: TextStyle(
-          color: AppTheme.textSecondary,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    labelPainter.paint(
-      canvas,
-      Offset(centerX - labelPainter.width / 2, centerY - labelPainter.height / 2),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _FloorPlanPainter oldDelegate) {
-    return oldDelegate.showDimensions != showDimensions ||
-        oldDelegate.isMetric != isMetric ||
-        oldDelegate.roomLabel != roomLabel;
   }
 }

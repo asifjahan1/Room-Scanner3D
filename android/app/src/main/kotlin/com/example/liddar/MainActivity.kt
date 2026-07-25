@@ -15,7 +15,7 @@ class MainActivity : FlutterActivity() {
         flutterEngine.platformViewsController.registry
             .registerViewFactory(
                 "android-arcore-view",
-                ArCoreScannerViewFactory(flutterEngine.dartExecutor.binaryMessenger)
+                ArCoreScannerViewFactory(flutterEngine.dartExecutor.binaryMessenger, this)
             )
 
         // Register scanner method channel
@@ -27,6 +27,17 @@ class MainActivity : FlutterActivity() {
                     }
                     "hasARCore" -> {
                         result.success(isARCoreSupported())
+                    }
+                    "checkDeviceCapabilities" -> {
+                        val arSupported = isARCoreSupported()
+                        val tier = if (arSupported) "TIER_ARCORE_DEPTH" else "TIER_CAMERA_SENSOR"
+                        result.success(mapOf(
+                            "platform" to "android",
+                            "tier" to tier,
+                            "hasLiDAR" to false,
+                            "hasARCore" to arSupported,
+                            "hasDepthApi" to arSupported
+                        ))
                     }
                     "startScan" -> {
                         result.success(true)

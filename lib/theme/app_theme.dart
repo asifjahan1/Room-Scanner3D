@@ -16,6 +16,14 @@ class AppTheme {
   static const Color bgOverlay = Color(0xFF0D0D1A);
   static const Color borderDark = Color(0xFF2A2A3E);
 
+  // Light Theme Colors
+  static const Color bgLight = Color(0xFFF8F9FA);
+  static const Color bgCardLight = Color(0xFFFFFFFF);
+  static const Color bgSurfaceLight = Color(0xFFF1F5F9);
+  static const Color borderLight = Color(0xFFE2E8F0);
+  static const Color textDarkPrimary = Color(0xFF0F172A);
+  static const Color textDarkSecondary = Color(0xFF475569);
+
   // Text Colors
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFB0B0C8);
@@ -203,19 +211,45 @@ class AppTheme {
     );
   }
 
-  // Light Theme for Room Label Screen
+  // Light Theme Data
   static ThemeData get lightTheme {
     return ThemeData(
       brightness: Brightness.light,
-      scaffoldBackgroundColor: Colors.white,
+      scaffoldBackgroundColor: bgLight,
       primaryColor: primaryBlue,
       colorScheme: const ColorScheme.light(
         primary: primaryBlue,
         secondary: accentTeal,
-        surface: Colors.white,
+        surface: bgCardLight,
         error: dangerRed,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: textDarkPrimary,
       ),
-      textTheme: GoogleFonts.interTextTheme(),
+      textTheme: GoogleFonts.interTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: textDarkPrimary),
+          headlineLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: textDarkPrimary),
+          titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textDarkPrimary),
+          bodyLarge: TextStyle(fontSize: 16, color: textDarkSecondary),
+          bodyMedium: TextStyle(fontSize: 14, color: textDarkSecondary),
+        ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: bgLight,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textDarkPrimary),
+        iconTheme: IconThemeData(color: textDarkPrimary),
+      ),
+      cardTheme: CardThemeData(
+        color: bgCardLight,
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusLarge),
+          side: const BorderSide(color: borderLight, width: 1),
+        ),
+      ),
     );
   }
 }

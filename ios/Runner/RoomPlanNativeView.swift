@@ -256,6 +256,32 @@ extension RoomPlanNativeView: RoomCaptureSessionDelegate {
             area = abs(area) / 2.0
         }
 
+        var totalPerimeter = 0.0
+        for wall in room.walls {
+            totalPerimeter += Double(wall.dimensions.x)
+        }
+
+        // Extract furniture objects
+        var furniture: [[String: Any]] = []
+        for obj in room.objects {
+            let transform = obj.transform
+            let dims = obj.dimensions
+            let categoryStr = String(describing: obj.category)
+            furniture.append([
+                "category": categoryStr,
+                "position": [
+                    "x": Double(transform.columns.3.x),
+                    "y": Double(transform.columns.3.y),
+                    "z": Double(transform.columns.3.z)
+                ],
+                "dimensions": [
+                    "width": Double(dims.x),
+                    "height": Double(dims.y),
+                    "depth": Double(dims.z)
+                ]
+            ])
+        }
+
         // Export USDZ file
         var usdzPath: String? = nil
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -270,9 +296,10 @@ extension RoomPlanNativeView: RoomCaptureSessionDelegate {
         let resultData: [String: Any] = [
             "walls": walls,
             "openings": openings,
+            "furniture": furniture,
             "floorBoundary": floorBoundary,
             "area": area,
-            "perimeter": 0.0,
+            "perimeter": totalPerimeter,
             "usdzPath": usdzPath ?? "",
             "id": UUID().uuidString
         ]

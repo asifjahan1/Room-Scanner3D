@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/room_scan.dart';
+import 'live_room_minimap.dart';
 
 /// Scanning overlay UI elements shown on top of the camera/AR view
 class ScanOverlay extends StatefulWidget {
   final VoidCallback? onDoneTap;
+  final VoidCallback? onShutterTap;
   final VoidCallback? onSettingsTap;
   final VoidCallback? onFlashTap;
   final bool isScanning;
   final double scanProgress;
   final int wallsDetected;
+  final String guidanceMessage;
+  final TrackingQuality trackingQuality;
+  final List<String> warnings;
 
   const ScanOverlay({
     super.key,
     this.onDoneTap,
+    this.onShutterTap,
     this.onSettingsTap,
     this.onFlashTap,
     this.isScanning = false,
     this.scanProgress = 0.0,
     this.wallsDetected = 0,
+    this.guidanceMessage = '',
+    this.trackingQuality = TrackingQuality.good,
+    this.warnings = const [],
   });
 
   @override
@@ -64,7 +74,7 @@ class _ScanOverlayState extends State<ScanOverlay>
                 icon: Icons.settings,
                 onTap: widget.onSettingsTap,
               ),
-              // Scan info
+              // Scan info badge
               if (widget.isScanning)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -72,10 +82,10 @@ class _ScanOverlayState extends State<ScanOverlay>
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                     border: Border.all(
-                      color: AppTheme.wireframeGlow.withValues(alpha: 0.3),
+                      color: AppTheme.wireframeGlow.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Row(
@@ -85,9 +95,14 @@ class _ScanOverlayState extends State<ScanOverlay>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: AppTheme.scannerGreen,
+                          color: widget.trackingQuality == TrackingQuality.good
+                              ? AppTheme.scannerGreen
+                              : AppTheme.warningOrange,
                           shape: BoxShape.circle,
-                          boxShadow: AppTheme.glowShadow(AppTheme.scannerGreen),
+                          boxShadow: AppTheme.glowShadow(
+                              widget.trackingQuality == TrackingQuality.good
+                                  ? AppTheme.scannerGreen
+                                  : AppTheme.warningOrange),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -96,7 +111,7 @@ class _ScanOverlayState extends State<ScanOverlay>
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -111,6 +126,83 @@ class _ScanOverlayState extends State<ScanOverlay>
           ),
         ),
 
+        // Tracking quality warning & guidance banners
+        if (widget.isScanning)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 65,
+            left: 20,
+            right: 20,
+            child: Column(
+              children: [
+                if (widget.trackingQuality != TrackingQuality.good || widget.warnings.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warningOrange.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.black, size: 18),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            widget.warnings.isNotEmpty
+                                ? widget.warnings.last
+                                : (widget.trackingQuality == TrackingQuality.limited
+                                    ? 'Tracking limited. Move slower or aim at textured walls.'
+                                    : 'Tracking lost. Please hold steady.'),
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (widget.guidanceMessage.isNotEmpty && widget.warnings.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                    ),
+                    child: Text(
+                      widget.guidanceMessage,
+                      style: const TextStyle(
+                        color: AppTheme.accentTeal,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        // Live 3D Room Mini-Map Card (Apple RoomPlan style bottom-left placement)
+        if (widget.isScanning)
+          Positioned(
+            left: 20,
+            bottom: MediaQuery.of(context).padding.bottom + 110,
+            child: LiveRoomMiniMap(
+              wallsDetected: widget.wallsDetected,
+              isScanning: widget.isScanning,
+            ),
+          ),
+
         // Bottom controls
         Positioned(
           bottom: MediaQuery.of(context).padding.bottom + 24,
@@ -121,9 +213,9 @@ class _ScanOverlayState extends State<ScanOverlay>
               // Scan progress indicator
               if (widget.isScanning && widget.scanProgress > 0)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.only(bottom: 16),
                   child: SizedBox(
-                    width: 200,
+                    width: 180,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
@@ -164,7 +256,7 @@ class _ScanOverlayState extends State<ScanOverlay>
           ),
         ),
 
-        // Scanning guide overlay
+        // Scanning guide overlay when idle
         if (!widget.isScanning)
           Center(
             child: Container(
@@ -195,7 +287,7 @@ class _ScanOverlayState extends State<ScanOverlay>
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Slowly move around the room',
+                    'Slowly pan along room corners and walls',
                     style: TextStyle(
                       color: Colors.white54,
                       fontSize: 13,
@@ -232,7 +324,7 @@ class _ScanOverlayState extends State<ScanOverlay>
 
   Widget _buildCaptureButton() {
     return GestureDetector(
-      onTap: () {},
+      onTap: widget.onShutterTap,
       child: Container(
         width: 72,
         height: 72,
@@ -261,7 +353,7 @@ class _ScanOverlayState extends State<ScanOverlay>
               shape: BoxShape.circle,
             ),
             child: widget.isScanning
-                ? const Icon(Icons.stop, color: Colors.white, size: 28)
+                ? const Icon(Icons.camera, color: Colors.white, size: 28)
                 : null,
           ),
         ),
@@ -324,13 +416,11 @@ class WireframePainter extends CustomPainter {
       ..strokeWidth = 3.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
 
-    // Draw a sample room wireframe (for preview purposes)
     final cx = size.width / 2;
     final cy = size.height / 2;
     final w = size.width * 0.6;
     final h = size.height * 0.7;
 
-    // Floor rectangle
     final floorPath = Path()
       ..moveTo(cx - w / 2, cy + h / 4)
       ..lineTo(cx + w / 2, cy + h / 4)
@@ -338,7 +428,6 @@ class WireframePainter extends CustomPainter {
       ..lineTo(cx - w / 3, cy - h / 8)
       ..close();
 
-    // Ceiling rectangle (perspective)
     final ceilPath = Path()
       ..moveTo(cx - w / 3, cy - h / 8)
       ..lineTo(cx + w / 3, cy - h / 8)
@@ -346,7 +435,6 @@ class WireframePainter extends CustomPainter {
       ..lineTo(cx - w / 4, cy - h / 2.5)
       ..close();
 
-    // Vertical edges
     final verticals = Path()
       ..moveTo(cx - w / 2, cy + h / 4)
       ..lineTo(cx - w / 3, cy - h / 8)
@@ -357,23 +445,19 @@ class WireframePainter extends CustomPainter {
       ..moveTo(cx + w / 3, cy - h / 8)
       ..lineTo(cx + w / 4, cy - h / 2.5);
 
-    // Draw with glow
     canvas.drawPath(floorPath, glowPaint);
     canvas.drawPath(ceilPath, glowPaint);
     canvas.drawPath(verticals, glowPaint);
 
-    // Draw crisp lines
     canvas.drawPath(floorPath, paint);
     canvas.drawPath(ceilPath, paint);
     canvas.drawPath(verticals, paint);
 
-    // Add some detail lines (furniture outlines)
     final detailPaint = Paint()
       ..color = wireframeColor.withValues(alpha: 0.4 * progress)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // Cabinet-like rectangle
     final cabinet = Path()
       ..addRect(Rect.fromLTWH(
         cx - w / 4,
@@ -383,7 +467,6 @@ class WireframePainter extends CustomPainter {
       ));
     canvas.drawPath(cabinet, detailPaint);
 
-    // Corner dots
     final dotPaint = Paint()
       ..color = AppTheme.wireframeBlue.withValues(alpha: 0.6 * progress)
       ..style = PaintingStyle.fill;

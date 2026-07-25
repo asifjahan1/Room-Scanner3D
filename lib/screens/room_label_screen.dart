@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:uuid/uuid.dart';
 import '../theme/app_theme.dart';
 import '../models/room_label.dart';
 import '../models/room_scan.dart';
+import '../controllers/project_controller.dart';
 import '../widgets/room_type_button.dart';
-import 'floor_plan_screen.dart';
+import '../core/routes/app_routes.dart';
 
 class RoomLabelScreen extends StatefulWidget {
   final RoomScan? roomScan;
@@ -20,6 +23,7 @@ class RoomLabelScreen extends StatefulWidget {
 class _RoomLabelScreenState extends State<RoomLabelScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedRoomTypeId;
+  RoomType _selectedRoomTypeEnum = RoomType.custom;
   final TextEditingController _labelController = TextEditingController();
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
@@ -44,48 +48,71 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
     super.dispose();
   }
 
-  void _selectRoomType(RoomType type) {
+  void _selectRoomType(RoomLabelPreset type) {
     setState(() {
       _selectedRoomTypeId = type.id;
       _labelController.text = type.name;
+      _selectedRoomTypeEnum = _mapPresetToRoomType(type.id);
     });
   }
 
-  void _navigateToFloorPlan() {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            FloorPlanScreen(
-          roomLabel: _labelController.text.isNotEmpty
-              ? _labelController.text
-              : 'Scanned Room',
-          roomScan: widget.roomScan,
-        ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            )),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-      ),
-    );
+  RoomType _mapPresetToRoomType(String id) {
+    switch (id.toLowerCase()) {
+      case 'living_room': return RoomType.livingRoom;
+      case 'bedroom': return RoomType.bedroom;
+      case 'kitchen': return RoomType.kitchen;
+      case 'bathroom': return RoomType.bathroom;
+      case 'office': return RoomType.office;
+      case 'hallway': return RoomType.hallway;
+      default: return RoomType.custom;
+    }
+  }
+
+  Future<void> _navigateToFloorPlan() async {
+    final originalScan = widget.roomScan ?? (Get.arguments as RoomScan?);
+    final finalLabel = _labelController.text.trim().isNotEmpty ? _labelController.text.trim() : 'Scanned Room';
+    
+    RoomScan finalScan;
+    if (originalScan != null) {
+      finalScan = originalScan.copyWith(
+        label: finalLabel,
+        roomType: _selectedRoomTypeEnum,
+      );
+    } else {
+      const uuid = Uuid();
+      finalScan = RoomScan(
+        id: uuid.v4(),
+        label: finalLabel,
+        roomType: _selectedRoomTypeEnum,
+        scannedAt: DateTime.now(),
+        walls: const [
+          WallSegment(start: Point3D(-2.0, 0.0, -1.5), end: Point3D(2.0, 0.0, -1.5)),
+          WallSegment(start: Point3D(2.0, 0.0, -1.5), end: Point3D(2.0, 0.0, 1.5)),
+          WallSegment(start: Point3D(2.0, 0.0, 1.5), end: Point3D(-2.0, 0.0, 1.5)),
+          WallSegment(start: Point3D(-2.0, 0.0, 1.5), end: Point3D(-2.0, 0.0, -1.5)),
+        ],
+        area: 12.0,
+        perimeter: 14.0,
+      );
+    }
+
+    // Persist scan to ProjectController so it appears in recent scans and current project
+    if (Get.isRegistered<ProjectController>()) {
+      await Get.find<ProjectController>().addRoomToCurrentProject(finalScan);
+    }
+
+    Get.offNamed(AppRoutes.floorPlan, arguments: finalScan);
   }
 
   void _rescan() {
-    Navigator.of(context).pop();
+    Get.offNamed(AppRoutes.scanning);
   }
 
   @override
   Widget build(BuildContext context) {
+    final scan = widget.roomScan ?? (Get.arguments as RoomScan?);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.bgDark,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -93,13 +120,12 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
             children: [
               // Top Bar
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () => Get.back(),
                       child: const Text(
                         'Back',
                         style: TextStyle(
@@ -110,9 +136,9 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                       ),
                     ),
                     const Text(
-                      'Label Room',
+                      'Categorize & Label Room',
                       style: TextStyle(
-                        color: Colors.black,
+                        color: AppTheme.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
@@ -129,26 +155,26 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F7),
+                  color: AppTheme.bgCard,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE5E5EA)),
+                  border: Border.all(color: AppTheme.borderDark),
                 ),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.space_dashboard_outlined,
                         size: 44,
-                        color: Colors.grey.shade600,
+                        color: AppTheme.accentTeal,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${widget.roomScan?.walls.length ?? 4} Walls',
-                        style: TextStyle(
+                        '${scan?.walls.length ?? 4} Walls Detected',
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -164,10 +190,10 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Label',
+                    const Text(
+                      'Custom Room Name',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -177,20 +203,28 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                       controller: _labelController,
                       style: const TextStyle(
                         fontSize: 16,
-                        color: Colors.black,
+                        color: AppTheme.textPrimary,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Enter room name',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        hintText: 'e.g. Master Bedroom, Basement',
+                        hintStyle: const TextStyle(color: AppTheme.textTertiary),
                         filled: true,
-                        fillColor: const Color(0xFFF5F5F7),
+                        fillColor: AppTheme.bgCard,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.primaryBlue),
                         ),
                       ),
                     ),
@@ -210,9 +244,9 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                     crossAxisSpacing: 12,
                     childAspectRatio: 0.9,
                   ),
-                  itemCount: RoomType.allTypes.length,
+                  itemCount: RoomLabelPreset.presets.length,
                   itemBuilder: (context, index) {
-                    final type = RoomType.allTypes[index];
+                    final type = RoomLabelPreset.presets[index];
                     final isSelected = _selectedRoomTypeId == type.id;
                     return RoomTypeButton(
                       label: type.name,
@@ -235,7 +269,8 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                         child: ElevatedButton(
                           onPressed: _rescan,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF3B30),
+                            backgroundColor: AppTheme.bgCard,
+                            side: const BorderSide(color: AppTheme.dangerRed),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -244,7 +279,7 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                           child: const Text(
                             'Rescan',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.dangerRed,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -259,18 +294,18 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                         child: ElevatedButton(
                           onPressed: _navigateToFloorPlan,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00C7BE),
-                            elevation: 0,
+                            backgroundColor: AppTheme.accentTeal,
+                            elevation: 4,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: const Text(
-                            'Continue',
+                            'Generate Plan',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),

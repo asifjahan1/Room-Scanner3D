@@ -1,12 +1,11 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import '../theme/app_theme.dart';
 import '../widgets/scan_overlay.dart';
-import '../services/scanner_service.dart';
-import '../models/room_scan.dart';
-import 'scan_complete_screen.dart';
+import '../controllers/scanning_controller.dart';
+import '../core/routes/app_routes.dart';
 
 class ScanningScreen extends StatefulWidget {
   const ScanningScreen({super.key});
@@ -16,162 +15,22 @@ class ScanningScreen extends StatefulWidget {
 }
 
 class _ScanningScreenState extends State<ScanningScreen>
-    with TickerProviderStateMixin {
-  bool _isScanning = false;
-  bool _isInitialized = false;
-  double _scanProgress = 0.0;
-  int _wallsDetected = 0;
-  MethodChannel? _viewChannel;
-  RoomScan? _scannedRoom;
-
-  late AnimationController _wireframeController;
-  late Animation<double> _wireframeAnimation;
+    with SingleTickerProviderStateMixin {
   late AnimationController _scanLineController;
+  final ScanningController controller = Get.find<ScanningController>();
 
   @override
   void initState() {
     super.initState();
-
-    _wireframeController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat();
-    _wireframeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _wireframeController, curve: Curves.linear),
-    );
-
     _scanLineController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat();
-
-    _initializeScanner();
-  }
-
-  Future<void> _initializeScanner() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() {
-        _isInitialized = true;
-      });
-    }
-  }
-
-  void _setupPlatformChannel(int id) {
-    final channelName = Platform.isIOS
-        ? 'com.app.liddar/roomplan_view_$id'
-        : 'com.app.liddar/arcore_view_$id';
-
-    _viewChannel = MethodChannel(channelName);
-    _viewChannel?.setMethodCallHandler((call) async {
-      switch (call.method) {
-        case 'onScanProgress':
-          final data = Map<String, dynamic>.from(call.arguments as Map);
-          if (mounted) {
-            setState(() {
-              _wallsDetected = (data['wallsDetected'] as num?)?.toInt() ?? _wallsDetected;
-              _scanProgress = (data['percentage'] as num?)?.toDouble() ?? _scanProgress;
-            });
-          }
-          break;
-        case 'onScanComplete':
-          final data = Map<String, dynamic>.from(call.arguments as Map);
-          _scannedRoom = ScannerService.parseScanResult(data);
-          _navigateToComplete();
-          break;
-        case 'onScanError':
-          final error = call.arguments is Map ? call.arguments['error'] : call.arguments.toString();
-          debugPrint('Scan error: $error');
-          if (mounted) {
-            setState(() {
-              _isScanning = false;
-            });
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('AR Error'),
-                content: Text(
-                  'Failed to start AR camera.\n\nDetails: $error\n\nYour device might not support ARCore or camera permissions are missing.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      Navigator.pop(context); // Go back to Home
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          }
-          break;
-      }
-    });
-
-    // Automatically trigger scanning session on native view
-    _startScanning();
-  }
-
-  Future<void> _startScanning() async {
-    setState(() {
-      _isScanning = true;
-    });
-
-    try {
-      if (_viewChannel != null) {
-        await _viewChannel?.invokeMethod('startScan');
-      } else {
-        await ScannerService.startScan();
-      }
-    } catch (e) {
-      debugPrint('Error starting native scan: $e');
-    }
-  }
-
-  Future<void> _stopScanning() async {
-    setState(() {
-      _isScanning = false;
-    });
-
-    try {
-      if (_viewChannel != null) {
-        final result = await _viewChannel?.invokeMethod<Map<dynamic, dynamic>>('stopScan');
-        if (result != null) {
-          _scannedRoom = ScannerService.parseScanResult(Map<String, dynamic>.from(result));
-        }
-      } else {
-        final result = await ScannerService.stopScan();
-        if (result != null) {
-          _scannedRoom = ScannerService.parseScanResult(result);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error stopping native scan: $e');
-    }
-
-    _navigateToComplete();
-  }
-
-  void _navigateToComplete() {
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            ScanCompleteScreen(roomScan: _scannedRoom),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-    );
   }
 
   @override
   void dispose() {
-    _wireframeController.dispose();
     _scanLineController.dispose();
-    _isScanning = false;
     super.dispose();
   }
 
@@ -186,26 +45,10 @@ class _ScanningScreenState extends State<ScanningScreen>
             child: _buildScannerView(),
           ),
 
-          // Wireframe overlay
-          if (_isInitialized)
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _wireframeAnimation,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: _LiveWireframePainter(
-                      progress: _wireframeAnimation.value,
-                      isScanning: _isScanning,
-                      wallsDetected: _wallsDetected,
-                    ),
-                  );
-                },
-              ),
-            ),
-
           // Scan line animation
-          if (_isScanning)
-            AnimatedBuilder(
+          Obx(() {
+            if (!controller.isScanning.value) return const SizedBox.shrink();
+            return AnimatedBuilder(
               animation: _scanLineController,
               builder: (context, child) {
                 final screenHeight = MediaQuery.of(context).size.height;
@@ -236,27 +79,40 @@ class _ScanningScreenState extends State<ScanningScreen>
                   ),
                 );
               },
-            ),
+            );
+          }),
 
-          // Scan overlay UI (buttons, status)
-          ScanOverlay(
-            isScanning: _isScanning,
-            scanProgress: _scanProgress,
-            wallsDetected: _wallsDetected,
-            onDoneTap: () {
-              if (_isScanning) {
-                _stopScanning();
-              } else {
-                _navigateToComplete();
-              }
-            },
-            onSettingsTap: () {},
-            onFlashTap: () {},
-          ),
+          // Scan overlay UI (buttons, status, tracking quality, warnings)
+          Obx(() => ScanOverlay(
+                isScanning: controller.isScanning.value,
+                scanProgress: controller.scanProgress.value,
+                wallsDetected: controller.wallsDetected.value,
+                guidanceMessage: controller.guidanceMessage.value,
+                trackingQuality: controller.trackingQuality.value,
+                warnings: controller.warnings.toList(),
+                onShutterTap: () {
+                  if (controller.isScanning.value) {
+                    controller.captureWall();
+                  } else {
+                    controller.startScanning();
+                  }
+                },
+                onDoneTap: () async {
+                  if (controller.isScanning.value) {
+                    final room = await controller.stopScanning();
+                    Get.offNamed(AppRoutes.scanComplete, arguments: room);
+                  } else {
+                    Get.offNamed(AppRoutes.scanComplete, arguments: controller.scannedRoom.value);
+                  }
+                },
+                onSettingsTap: () => Get.toNamed(AppRoutes.settings),
+                onFlashTap: () {},
+              )),
 
           // Initializing overlay
-          if (!_isInitialized)
-            Positioned.fill(
+          Obx(() {
+            if (controller.isInitialized.value) return const SizedBox.shrink();
+            return Positioned.fill(
               child: Container(
                 color: Colors.black.withValues(alpha: 0.8),
                 child: const Center(
@@ -280,17 +136,21 @@ class _ScanningScreenState extends State<ScanningScreen>
                   ),
                 ),
               ),
-            ),
+            );
+          }),
 
           // Tap to start scanning
-          if (_isInitialized && !_isScanning)
-            Positioned(
+          Obx(() {
+            if (!controller.isInitialized.value || controller.isScanning.value) {
+              return const SizedBox.shrink();
+            }
+            return Positioned(
               bottom: MediaQuery.of(context).padding.bottom + 120,
               left: 0,
               right: 0,
               child: Center(
                 child: GestureDetector(
-                  onTap: _startScanning,
+                  onTap: controller.startScanning,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -314,7 +174,8 @@ class _ScanningScreenState extends State<ScanningScreen>
                   ),
                 ),
               ),
-            ),
+            );
+          }),
         ],
       ),
     );
@@ -335,9 +196,9 @@ class _ScanningScreenState extends State<ScanningScreen>
         return UiKitView(
           viewType: viewType,
           onPlatformViewCreated: (id) {
-            _setupPlatformChannel(id);
+            controller.setupPlatformChannel(id);
           },
-          creationParams: <String, dynamic>{
+          creationParams: const <String, dynamic>{
             'showWireframe': true,
           },
           creationParamsCodec: const StandardMessageCodec(),
@@ -346,9 +207,9 @@ class _ScanningScreenState extends State<ScanningScreen>
         return AndroidView(
           viewType: viewType,
           onPlatformViewCreated: (id) {
-            _setupPlatformChannel(id);
+            controller.setupPlatformChannel(id);
           },
-          creationParams: <String, dynamic>{
+          creationParams: const <String, dynamic>{
             'showWireframe': true,
             'useDepthAPI': true,
           },
@@ -369,117 +230,6 @@ class _ScanningScreenState extends State<ScanningScreen>
         child: const SizedBox.expand(),
       ),
     );
-  }
-}
-
-/// Live wireframe painter that animates during scanning
-class _LiveWireframePainter extends CustomPainter {
-  final double progress;
-  final bool isScanning;
-  final int wallsDetected;
-
-  _LiveWireframePainter({
-    required this.progress,
-    required this.isScanning,
-    required this.wallsDetected,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (!isScanning && wallsDetected == 0) return;
-
-    final paint = Paint()
-      ..color = AppTheme.wireframeWhite.withValues(alpha: 0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    final glowPaint = Paint()
-      ..color = AppTheme.wireframeGlow.withValues(alpha: 0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final phase = progress * 2 * pi;
-
-    if (wallsDetected >= 1) {
-      _drawWall(canvas, paint, glowPaint,
-          Offset(cx - 120, cy + 80), Offset(cx + 120, cy + 80), phase);
-    }
-    if (wallsDetected >= 2) {
-      _drawWall(canvas, paint, glowPaint,
-          Offset(cx + 120, cy + 80), Offset(cx + 100, cy - 40), phase);
-      _drawVertical(canvas, paint, glowPaint,
-          Offset(cx + 120, cy + 80), Offset(cx + 100, cy - 120), phase);
-    }
-    if (wallsDetected >= 3) {
-      _drawWall(canvas, paint, glowPaint,
-          Offset(cx - 120, cy + 80), Offset(cx - 100, cy - 40), phase);
-      _drawVertical(canvas, paint, glowPaint,
-          Offset(cx - 120, cy + 80), Offset(cx - 100, cy - 120), phase);
-    }
-    if (wallsDetected >= 4) {
-      _drawWall(canvas, paint, glowPaint,
-          Offset(cx - 100, cy - 40), Offset(cx + 100, cy - 40), phase);
-      _drawWall(canvas, paint, glowPaint,
-          Offset(cx - 100, cy - 120), Offset(cx + 100, cy - 120), phase);
-      _drawVertical(canvas, paint, glowPaint,
-          Offset(cx + 100, cy - 40), Offset(cx + 100, cy - 120), phase);
-      _drawVertical(canvas, paint, glowPaint,
-          Offset(cx - 100, cy - 40), Offset(cx - 100, cy - 120), phase);
-    }
-
-    final cornerPaint = Paint()
-      ..color = AppTheme.wireframeBlue.withValues(alpha: 0.8)
-      ..style = PaintingStyle.fill;
-
-    final corners = <Offset>[];
-    if (wallsDetected >= 1) {
-      corners.add(Offset(cx - 120, cy + 80));
-      corners.add(Offset(cx + 120, cy + 80));
-    }
-    if (wallsDetected >= 3) {
-      corners.add(Offset(cx - 100, cy - 40));
-    }
-    if (wallsDetected >= 2) {
-      corners.add(Offset(cx + 100, cy - 40));
-    }
-
-    for (final corner in corners) {
-      canvas.drawCircle(corner, 4, cornerPaint);
-      canvas.drawCircle(
-        corner,
-        8,
-        Paint()
-          ..color = AppTheme.wireframeBlue.withValues(alpha: 0.2)
-          ..style = PaintingStyle.fill,
-      );
-    }
-  }
-
-  void _drawWall(Canvas canvas, Paint paint, Paint glowPaint,
-      Offset start, Offset end, double phase) {
-    canvas.drawLine(start, end, glowPaint);
-    canvas.drawLine(start, end, paint);
-  }
-
-  void _drawVertical(Canvas canvas, Paint paint, Paint glowPaint,
-      Offset start, Offset end, double phase) {
-    final dashPaint = Paint()
-      ..color = paint.color.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    canvas.drawLine(start, end, glowPaint);
-    canvas.drawLine(start, end, dashPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _LiveWireframePainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.isScanning != isScanning ||
-        oldDelegate.wallsDetected != wallsDetected;
   }
 }
 

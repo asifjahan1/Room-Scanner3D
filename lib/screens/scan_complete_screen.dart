@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animated_checkmark.dart';
 import '../models/room_scan.dart';
-import 'room_label_screen.dart';
+import '../core/routes/app_routes.dart';
 
 class ScanCompleteScreen extends StatefulWidget {
   final RoomScan? roomScan;
@@ -54,27 +55,20 @@ class _ScanCompleteScreenState extends State<ScanCompleteScreen>
   }
 
   void _navigateToLabel() {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            RoomLabelScreen(roomScan: widget.roomScan),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-      ),
-    );
+    final effectiveScan = widget.roomScan ?? (Get.arguments as RoomScan?);
+    Get.offNamed(AppRoutes.roomLabel, arguments: effectiveScan);
   }
 
   @override
   Widget build(BuildContext context) {
-    final wallCount = widget.roomScan?.walls.length ?? 4;
-    final areaStr = widget.roomScan?.area != null
-        ? '${widget.roomScan!.area!.toStringAsFixed(1)} m²'
+    final scan = widget.roomScan ?? (Get.arguments as RoomScan?);
+    final wallCount = scan?.walls.length ?? 4;
+    final areaStr = scan?.area != null
+        ? '${scan!.area!.toStringAsFixed(1)} m²'
         : '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A12),
+      backgroundColor: AppTheme.bgDark,
       body: SafeArea(
         child: Column(
           children: [
@@ -103,14 +97,14 @@ class _ScanCompleteScreenState extends State<ScanCompleteScreen>
                               .headlineMedium
                               ?.copyWith(
                                 color: AppTheme.textPrimary,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           areaStr.isNotEmpty
-                              ? 'Detected $wallCount walls ($areaStr)'
-                              : 'Press Done to label your room',
+                              ? 'Extracted $wallCount high-precision wall segments ($areaStr)'
+                              : 'Press Done to categorize and label your room',
                           style: Theme.of(context)
                               .textTheme
                               .bodyLarge
@@ -139,32 +133,23 @@ class _ScanCompleteScreenState extends State<ScanCompleteScreen>
                       child: SizedBox(
                         width: double.infinity,
                         height: 52,
-                        child: GestureDetector(
-                          onTap: _navigateToLabel,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.primaryGradient,
-                              borderRadius: BorderRadius.circular(
-                                  AppTheme.radiusPill),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.doneButtonBg
-                                      .withValues(alpha: 0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
+                        child: ElevatedButton(
+                          onPressed: _navigateToLabel,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryBlue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                             ),
-                            child: const Center(
-                              child: Text(
-                                'Done',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                            elevation: 8,
+                            shadowColor: AppTheme.primaryBlue.withValues(alpha: 0.5),
+                          ),
+                          child: const Text(
+                            'Continue to Labelling',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),

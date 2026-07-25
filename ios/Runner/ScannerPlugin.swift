@@ -31,11 +31,24 @@ extension ScannerPlugin: FlutterPlugin {
                 result(false)
             }
         case "hasLiDAR":
-            if #available(iOS 16.0, *) {
-                result(ARConfiguration.supportsFrameSemantics(.sceneDepth))
+            if #available(iOS 14.0, *) {
+                result(ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh))
             } else {
                 result(false)
             }
+        case "checkDeviceCapabilities":
+            var hasLidar = false
+            if #available(iOS 14.0, *) {
+                hasLidar = ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)
+            }
+            let tier = hasLidar ? "TIER_LIDAR" : "TIER_CAMERA_SENSOR"
+            result([
+                "platform": "ios",
+                "tier": tier,
+                "hasLiDAR": hasLidar,
+                "hasARCore": false,
+                "hasDepthApi": hasLidar
+            ])
         case "startScan":
             // Scanning is handled by the platform view
             result(true)
