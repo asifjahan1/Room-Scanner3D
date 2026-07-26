@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
@@ -29,6 +28,11 @@ class ScanningController extends GetxController {
 
   MethodChannel? _viewChannel;
   Timer? _recordingTimer;
+
+  /// Completer used to wait for the native platform to deliver scan results
+  /// via the `onScanComplete` callback. This avoids the race condition where
+  /// the Flutter side also tries to get results from the `stopScan` return value.
+  Completer<RoomScan?>? _scanCompleter;
 
   String get recordingDurationText {
     final mins = (recordingSeconds.value ~/ 60).toString().padLeft(2, '0');
@@ -83,7 +87,13 @@ class ScanningController extends GetxController {
       case 'onScanComplete':
         final data = Map<String, dynamic>.from(call.arguments as Map);
         final rawScan = ScannerService.parseScanResult(data);
-        await _processAndCompleteScan(rawScan);
+        // If we have a pending completer from stopScanning(), resolve it
+        if (_scanCompleter != null && !_scanCompleter!.isCompleted) {
+          _scanCompleter!.complete(rawScan);
+        } else {
+          // Native side sent scan complete asynchronously (e.g. auto-complete)
+          await _processAndCompleteScan(rawScan);
+        }
         break;
 
       case 'onScanError':
@@ -93,6 +103,10 @@ class ScanningController extends GetxController {
         isScanning.value = false;
         isRecording.value = false;
         _stopRecordingTimer();
+        // Resolve completer with null on error so stopScanning doesn't hang
+        if (_scanCompleter != null && !_scanCompleter!.isCompleted) {
+          _scanCompleter!.complete(null);
+        }
         Get.snackbar(
           'AR Sensor Notice',
           'AR session encountered an issue: $error',
@@ -163,12 +177,11 @@ class ScanningController extends GetxController {
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       recordingSeconds.value++;
-      if (recordingSeconds.value > 0 &&
-          wallsDetected.value == 0 &&
-          recordingSeconds.value % 4 == 0) {
-        // Simulate wall detection progress during testing if AR sensors haven't returned planes yet
-        wallsDetected.value = math.min(4, (recordingSeconds.value ~/ 4));
-        scanProgress.value = math.min(1.0, wallsDetected.value / 4.0);
+      // No fake wall simulation — only show what native sensors actually detect.
+      // If after 8 seconds no walls detected, give the user guidance.
+      if (recordingSeconds.value >= 8 && wallsDetected.value == 0) {
+        guidanceMessage.value =
+            'No walls detected yet. Move camera slowly along floor-wall intersections.';
       }
     });
   }
@@ -184,8 +197,8 @@ class ScanningController extends GetxController {
       if (_viewChannel != null) {
         await _viewChannel?.invokeMethod('captureWall');
       }
-      wallsDetected.value++;
-      scanProgress.value = math.min(1.0, wallsDetected.value / 4.0);
+      // Don't manually increment wallsDetected here — let the native side
+      // report actual wall count via onScanProgress callback.
     } catch (e) {
       Get.log('Error capturing manual wall point: $e');
     }
@@ -199,29 +212,68 @@ class ScanningController extends GetxController {
     isRecording.value = false;
     isProcessing.value = true;
 
-    RoomScan? rawResult;
+    // Create a Completer to wait for the native `onScanComplete` callback.
+    // The native side sends results via the callback, so we wait for that
+    // instead of relying on the direct return value (which caused a race condition).
+    _scanCompleter = Completer<RoomScan?>();
+
+    RoomScan? nativeResult;
     try {
       if (_viewChannel != null) {
-        final result = await _viewChannel?.invokeMethod<Map<dynamic, dynamic>>(
+        // Tell native to stop — it will send results via onScanComplete callback
+        final directResult = await _viewChannel?.invokeMethod<Map<dynamic, dynamic>>(
           'stopScan',
         );
-        if (result != null) {
-          rawResult = ScannerService.parseScanResult(
-            Map<String, dynamic>.from(result),
+        // If we got a direct result AND the completer hasn't been resolved yet
+        // by the callback, use the direct result
+        if (directResult != null && !_scanCompleter!.isCompleted) {
+          final parsed = ScannerService.parseScanResult(
+            Map<String, dynamic>.from(directResult),
           );
+          _scanCompleter!.complete(parsed);
         }
       } else {
         final result = await ScannerService.stopScan();
-        if (result != null) {
-          rawResult = ScannerService.parseScanResult(result);
+        if (result != null && !_scanCompleter!.isCompleted) {
+          _scanCompleter!.complete(ScannerService.parseScanResult(result));
         }
       }
     } catch (e) {
       Get.log('Error stopping native scan: $e');
+      // If native call fails, complete with null so we don't hang
+      if (!_scanCompleter!.isCompleted) {
+        _scanCompleter!.complete(null);
+      }
     }
 
-    rawResult ??= _createFallbackScannedRoom();
-    await _processAndCompleteScan(rawResult);
+    // Wait for result from either the callback or the direct return, with a timeout
+    try {
+      nativeResult = await _scanCompleter!.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+    } catch (e) {
+      Get.log('Timeout waiting for scan result: $e');
+      nativeResult = null;
+    }
+    _scanCompleter = null;
+
+    // If we truly got no data from the native side, show error
+    if (nativeResult == null || nativeResult.walls.isEmpty) {
+      isProcessing.value = false;
+      isScanning.value = false;
+      Get.snackbar(
+        'Scan Failed',
+        'Could not detect any walls. Please try again — move camera slowly along floor-wall intersections in a well-lit room.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+        backgroundColor: Get.theme.colorScheme.error.withValues(alpha: 0.9),
+        colorText: Get.theme.colorScheme.onError,
+      );
+      return null;
+    }
+
+    await _processAndCompleteScan(nativeResult);
     return scannedRoom.value;
   }
 
@@ -250,36 +302,12 @@ class ScanningController extends GetxController {
     Get.offNamed(AppRoutes.scanComplete, arguments: polishedRoom);
   }
 
-  /// Straightens wall segments and joins endpoints so room boundary forms a crisp polygon without overwriting partial scans.
+  /// Straightens wall segments and joins endpoints so room boundary forms a crisp polygon.
+  /// If no walls were captured, returns empty list instead of fake data.
   List<WallSegment> _orthogonalizeAndCloseWalls(List<WallSegment> inputWalls) {
     if (inputWalls.isEmpty) {
-      // Return default rectangular layout only if zero walls were captured
-      return const [
-        WallSegment(
-          start: Point3D(-2.0, 0.0, -1.5),
-          end: Point3D(2.0, 0.0, -1.5),
-          height: 2.7,
-          thickness: 0.15,
-        ),
-        WallSegment(
-          start: Point3D(2.0, 0.0, -1.5),
-          end: Point3D(2.0, 0.0, 1.5),
-          height: 2.7,
-          thickness: 0.15,
-        ),
-        WallSegment(
-          start: Point3D(2.0, 0.0, 1.5),
-          end: Point3D(-2.0, 0.0, 1.5),
-          height: 2.7,
-          thickness: 0.15,
-        ),
-        WallSegment(
-          start: Point3D(-2.0, 0.0, 1.5),
-          end: Point3D(-2.0, 0.0, -1.5),
-          height: 2.7,
-          thickness: 0.15,
-        ),
-      ];
+      // Return empty — no fake rectangles. The caller handles the error state.
+      return [];
     }
 
     // If user performed a partial scan (1 or 2 wall segments), preserve their exact captured geometry without forcing a closed box
@@ -362,42 +390,6 @@ class ScanningController extends GetxController {
     return total > 0 ? total : 0.0;
   }
 
-  RoomScan _createFallbackScannedRoom() {
-    const uuid = Uuid();
-    return RoomScan(
-      id: uuid.v4(),
-      label: 'Scanned Room',
-      roomType: RoomType.custom,
-      scannedAt: DateTime.now(),
-      walls: const [
-        WallSegment(
-          start: Point3D(-2.2, 0.0, -1.8),
-          end: Point3D(2.2, 0.0, -1.8),
-          height: 2.7,
-        ),
-        WallSegment(
-          start: Point3D(2.2, 0.0, -1.8),
-          end: Point3D(2.2, 0.0, 1.8),
-          height: 2.7,
-        ),
-        WallSegment(
-          start: Point3D(2.2, 0.0, 1.8),
-          end: Point3D(-2.2, 0.0, 1.8),
-          height: 2.7,
-        ),
-        WallSegment(
-          start: Point3D(-2.2, 0.0, 1.8),
-          end: Point3D(-2.2, 0.0, -1.8),
-          height: 2.7,
-        ),
-      ],
-      area: 15.84,
-      perimeter: 16.0,
-      roomHeight: 2.7,
-      status: ScanStatus.completed,
-    );
-  }
-
   /// Cancel scanning session without saving.
   Future<void> cancelScanning() async {
     _stopRecordingTimer();
@@ -405,6 +397,12 @@ class ScanningController extends GetxController {
     isScanning.value = false;
     isProcessing.value = false;
     _scanRepo.cancelScan();
+
+    // Cancel any pending completer
+    if (_scanCompleter != null && !_scanCompleter!.isCompleted) {
+      _scanCompleter!.complete(null);
+    }
+    _scanCompleter = null;
 
     try {
       if (_viewChannel != null) {
@@ -422,6 +420,9 @@ class ScanningController extends GetxController {
     _stopRecordingTimer();
     isScanning.value = false;
     isRecording.value = false;
+    if (_scanCompleter != null && !_scanCompleter!.isCompleted) {
+      _scanCompleter!.complete(null);
+    }
     super.onClose();
   }
 }

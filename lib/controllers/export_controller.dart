@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/room_scan.dart';
 import '../services/export_service.dart';
@@ -28,7 +29,18 @@ class ExportController extends GetxController {
       lastExportPath.value = path;
       await _exportService.shareFile(path);
     } catch (e) {
-      Get.snackbar('Export Failed', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Export Failed',
+        e.toString(),
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
+        icon: const Icon(Icons.error, color: Colors.white),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        borderColor: Colors.transparent,
+        borderRadius: 8,
+        margin: const EdgeInsets.all(16),
+      );
     } finally {
       isExporting.value = false;
     }

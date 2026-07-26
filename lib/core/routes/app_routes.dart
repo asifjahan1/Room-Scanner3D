@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../models/room_scan.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/scanning_screen.dart';
 import '../../screens/scan_complete_screen.dart';
@@ -40,7 +41,13 @@ class AppRoutes {
         ),
         GetPage(
           name: floorPlan,
-          page: () => const FloorPlanScreen(roomLabel: 'Room'),
+          page: () {
+            final scan = Get.arguments as RoomScan?;
+            return FloorPlanScreen(
+              roomLabel: scan?.label ?? 'Room',
+              roomScan: scan,
+            );
+          },
           binding: FloorPlanBinding(),
         ),
         GetPage(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:uuid/uuid.dart';
 import '../theme/app_theme.dart';
 import '../models/room_label.dart';
 import '../models/room_scan.dart';
@@ -72,29 +71,21 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
     final originalScan = widget.roomScan ?? (Get.arguments as RoomScan?);
     final finalLabel = _labelController.text.trim().isNotEmpty ? _labelController.text.trim() : 'Scanned Room';
     
-    RoomScan finalScan;
-    if (originalScan != null) {
-      finalScan = originalScan.copyWith(
-        label: finalLabel,
-        roomType: _selectedRoomTypeEnum,
+    if (originalScan == null || originalScan.walls.isEmpty) {
+      Get.snackbar(
+        'No Scan Data',
+        'No valid room scan data available. Please rescan the room.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
+        colorText: Colors.white,
       );
-    } else {
-      const uuid = Uuid();
-      finalScan = RoomScan(
-        id: uuid.v4(),
-        label: finalLabel,
-        roomType: _selectedRoomTypeEnum,
-        scannedAt: DateTime.now(),
-        walls: const [
-          WallSegment(start: Point3D(-2.0, 0.0, -1.5), end: Point3D(2.0, 0.0, -1.5)),
-          WallSegment(start: Point3D(2.0, 0.0, -1.5), end: Point3D(2.0, 0.0, 1.5)),
-          WallSegment(start: Point3D(2.0, 0.0, 1.5), end: Point3D(-2.0, 0.0, 1.5)),
-          WallSegment(start: Point3D(-2.0, 0.0, 1.5), end: Point3D(-2.0, 0.0, -1.5)),
-        ],
-        area: 12.0,
-        perimeter: 14.0,
-      );
+      return;
     }
+
+    final finalScan = originalScan.copyWith(
+      label: finalLabel,
+      roomType: _selectedRoomTypeEnum,
+    );
 
     // Persist scan to ProjectController so it appears in recent scans and current project
     if (Get.isRegistered<ProjectController>()) {

@@ -80,11 +80,17 @@ class ProjectController extends GetxController {
     currentProject.value = await _repo.loadProject(project.id);
   }
 
-  /// Get recent scans across all projects (last 5).
+  /// Get recent scans across all projects (last 5), deduplicated by room ID.
   List<RoomScan> get recentScans {
     final allRooms = <RoomScan>[];
+    final seenIds = <String>{};
     for (final project in projects) {
-      allRooms.addAll(project.rooms);
+      for (final room in project.rooms) {
+        if (!seenIds.contains(room.id)) {
+          seenIds.add(room.id);
+          allRooms.add(room);
+        }
+      }
     }
     allRooms.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
     return allRooms.take(5).toList();

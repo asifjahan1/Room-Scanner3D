@@ -120,6 +120,10 @@ class ArCoreScannerPlatformView(
     private var scannedSweepAngle = 0f
     private var lastReportedTrackingState: String = "good"
 
+    // Wall capture tracking — record yaw at each manual capture to estimate real wall lengths
+    private val capturedWallYaws = mutableListOf<Float>()
+    private var scanStartTimeMs = 0L
+
     init {
         containerView.layoutParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
@@ -538,8 +542,10 @@ class ArCoreScannerPlatformView(
         detectedPlanes.clear()
         wallSegments.clear()
         openings.clear()
+        capturedWallYaws.clear()
         scannedSweepAngle = 0f
         lastSweepYaw = currentYaw
+        scanStartTimeMs = System.currentTimeMillis()
 
         overlayView.startScanning()
         result.success(true)
@@ -551,10 +557,28 @@ class ArCoreScannerPlatformView(
             return
         }
 
-        // Capture wall based on current camera orientation (heading angle) & distance
-        val wallLength = 3.6 // Estimated wall length in meters
+        capturedWallYaws.add(currentYaw)
+
+        // Estimate wall length from the angle difference between this capture and the last.
+        // The user stands ~2m from the wall center; the visual arc subtended by the wall
+        // at that distance gives us:  wallLength ≈ 2 * distance * tan(deltaAngle / 2)
+        // For the first capture, use a proportional estimate from sweep coverage.
+        val wallLength: Double
+        if (capturedWallYaws.size >= 2) {
+            val prevYaw = capturedWallYaws[capturedWallYaws.size - 2]
+            var deltaAngle = abs(currentYaw - prevYaw).toDouble()
+            if (deltaAngle > 180.0) deltaAngle = 360.0 - deltaAngle
+            // Clamp to sensible range: minimum 30° (small wall), max 120° (very large wall)
+            deltaAngle = deltaAngle.coerceIn(15.0, 120.0)
+            val dist = 2.5 // Estimated distance from user to wall center
+            wallLength = (2.0 * dist * kotlin.math.tan(Math.toRadians(deltaAngle / 2.0))).coerceIn(1.0, 8.0)
+        } else {
+            // First wall capture — use sweep proportion. If user has swept e.g. 90°, assume ~3m wall.
+            wallLength = (scannedSweepAngle / 30.0).coerceIn(1.5, 6.0)
+        }
+
         val angleRad = Math.toRadians(currentYaw.toDouble())
-        val dist = 2.0 // Distance in front of camera
+        val dist = 2.5 // Distance in front of camera
 
         val midX = dist * sin(angleRad)
         val midZ = dist * cos(angleRad)
@@ -603,10 +627,10 @@ class ArCoreScannerPlatformView(
 
         val scanResult = buildScanResult()
 
-        mainHandler.post {
-            channel.invokeMethod("onScanComplete", scanResult)
-        }
-
+        // Return data ONLY via the direct result to avoid the dual-path race condition.
+        // The Flutter side uses a Completer that resolves from either this direct return
+        // or the onScanComplete callback — sending both caused data to be processed twice
+        // or missed entirely.
         result.success(scanResult)
     }
 
@@ -693,6 +717,13 @@ class ArCoreScannerPlatformView(
     private fun generateRoomFromSensorSweep() {
         if (wallSegments.isNotEmpty()) return
 
+        // If the user barely scanned (less than 30° sweep), don't generate any room —
+        // let the Flutter side show a "scan failed" error instead of fake data.
+        if (scannedSweepAngle < 30f) {
+            android.util.Log.w("ArCoreScannerView", "Insufficient sweep angle (${scannedSweepAngle}°) — no room generated")
+            return
+        }
+
         // Compute detected wall segments proportionally based on actual camera sweep angle
         val estimatedWalls = when {
             scannedSweepAngle < 55f -> 1  // Scanned only a single wall or part of a room
@@ -701,9 +732,17 @@ class ArCoreScannerPlatformView(
             else -> 4                     // Scanned complete full room perimeter
         }
 
-        val wallLength = 3.6 // Estimated standard room wall length in meters
-        val halfW = wallLength / 2.0
-        val halfL = wallLength / 2.0
+        // Estimate wall lengths proportionally from scan duration and sweep angle.
+        // A typical room has 3-5m walls. Longer scans with wider sweeps suggest larger rooms.
+        val scanDurationSec = (System.currentTimeMillis() - scanStartTimeMs) / 1000.0
+        // Base estimate: at walking speed (~0.5 m/s), wall length ≈ duration per wall × speed
+        val durationPerWall = (scanDurationSec / estimatedWalls.toDouble()).coerceIn(2.0, 20.0)
+        val estimatedWallLength = (durationPerWall * 0.6).coerceIn(1.5, 7.0) // meters
+
+        // Scale width vs length based on sweep symmetry
+        val halfW = estimatedWallLength / 2.0
+        // For a non-square room, alternate walls are typically ~80% of the primary
+        val halfL = (estimatedWallLength * 0.8) / 2.0
 
         val corners = listOf(
             Pair(-halfW, -halfL),
@@ -720,9 +759,9 @@ class ArCoreScannerPlatformView(
                     startX = corners[i].first,
                     startY = 0.0,
                     startZ = corners[i].second,
-                    endX = if (isPartialEnd) corners[i].first + 2.8 else corners[j].first,
+                    endX = if (isPartialEnd) (corners[i].first + corners[j].first) / 2.0 else corners[j].first,
                     endY = 0.0,
-                    endZ = if (isPartialEnd) corners[i].second + 0.2 else corners[j].second,
+                    endZ = if (isPartialEnd) (corners[i].second + corners[j].second) / 2.0 else corners[j].second,
                     height = 2.6,
                     thickness = 0.15
                 )
