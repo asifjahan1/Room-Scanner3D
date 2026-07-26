@@ -8,10 +8,7 @@ import '../core/routes/app_routes.dart';
 class ScanCompleteScreen extends StatefulWidget {
   final RoomScan? roomScan;
 
-  const ScanCompleteScreen({
-    super.key,
-    this.roomScan,
-  });
+  const ScanCompleteScreen({super.key, this.roomScan});
 
   @override
   State<ScanCompleteScreen> createState() => _ScanCompleteScreenState();
@@ -74,10 +71,7 @@ class _ScanCompleteScreenState extends State<ScanCompleteScreen>
           children: [
             const Spacer(flex: 2),
 
-            AnimatedCheckmark(
-              size: 120,
-              onComplete: _onCheckmarkComplete,
-            ),
+            AnimatedCheckmark(size: 120, onComplete: _onCheckmarkComplete),
 
             const SizedBox(height: 32),
 
@@ -92,9 +86,7 @@ class _ScanCompleteScreenState extends State<ScanCompleteScreen>
                       children: [
                         Text(
                           'Scanning Completed',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
+                          style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(
                                 color: AppTheme.textPrimary,
                                 fontWeight: FontWeight.w700,
@@ -105,12 +97,8 @@ class _ScanCompleteScreenState extends State<ScanCompleteScreen>
                           areaStr.isNotEmpty
                               ? 'Extracted $wallCount high-precision wall segments ($areaStr)'
                               : 'Press Done to categorize and label your room',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: AppTheme.textSecondary),
                         ),
                       ],
                     ),
@@ -138,10 +126,14 @@ class _ScanCompleteScreenState extends State<ScanCompleteScreen>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryBlue,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusPill,
+                              ),
                             ),
                             elevation: 8,
-                            shadowColor: AppTheme.primaryBlue.withValues(alpha: 0.5),
+                            shadowColor: AppTheme.primaryBlue.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                           child: const Text(
                             'Continue to Labelling',

@@ -16,13 +16,13 @@ class ScanningScreen extends StatefulWidget {
 
 class _ScanningScreenState extends State<ScanningScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _scanLineController;
+  late AnimationController _processingAnimationController;
   final ScanningController controller = Get.find<ScanningController>();
 
   @override
   void initState() {
     super.initState();
-    _scanLineController = AnimationController(
+    _processingAnimationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat();
@@ -30,7 +30,7 @@ class _ScanningScreenState extends State<ScanningScreen>
 
   @override
   void dispose() {
-    _scanLineController.dispose();
+    _processingAnimationController.dispose();
     super.dispose();
   }
 
@@ -40,96 +40,57 @@ class _ScanningScreenState extends State<ScanningScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Live Camera Feed via Platform View
+          // Live Camera Stream via Native AR Platform View
           Positioned.fill(
             child: _buildScannerView(),
           ),
 
-          // Scan line animation
-          Obx(() {
-            if (!controller.isScanning.value) return const SizedBox.shrink();
-            return AnimatedBuilder(
-              animation: _scanLineController,
-              builder: (context, child) {
-                final screenHeight = MediaQuery.of(context).size.height;
-                return Positioned(
-                  top: _scanLineController.value * screenHeight,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 2,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          AppTheme.wireframeGlow.withValues(alpha: 0.6),
-                          AppTheme.wireframeBlue.withValues(alpha: 0.8),
-                          AppTheme.wireframeGlow.withValues(alpha: 0.6),
-                          Colors.transparent,
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.wireframeGlow.withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-
-          // Scan overlay UI (buttons, status, tracking quality, warnings)
+          // Main Video-Style Scan Overlay UI (timer, shutter, mini-map, guidance)
           Obx(() => ScanOverlay(
                 isScanning: controller.isScanning.value,
+                isRecording: controller.isRecording.value,
+                recordingDurationText: controller.recordingDurationText,
                 scanProgress: controller.scanProgress.value,
                 wallsDetected: controller.wallsDetected.value,
                 guidanceMessage: controller.guidanceMessage.value,
                 trackingQuality: controller.trackingQuality.value,
                 warnings: controller.warnings.toList(),
-                onShutterTap: () {
-                  if (controller.isScanning.value) {
-                    controller.captureWall();
+                onShutterTap: () async {
+                  if (!controller.isRecording.value) {
+                    await controller.startScanning();
                   } else {
-                    controller.startScanning();
+                    // During continuous video recording, tapping the main red stop shutter triggers stop & process
+                    await controller.stopScanning();
                   }
                 },
                 onDoneTap: () async {
-                  if (controller.isScanning.value) {
-                    final room = await controller.stopScanning();
-                    Get.offNamed(AppRoutes.scanComplete, arguments: room);
-                  } else {
-                    Get.offNamed(AppRoutes.scanComplete, arguments: controller.scannedRoom.value);
-                  }
+                  await controller.stopScanning();
                 },
                 onSettingsTap: () => Get.toNamed(AppRoutes.settings),
                 onFlashTap: () {},
               )),
 
-          // Initializing overlay
+          // Initializing AR sensor overlay
           Obx(() {
             if (controller.isInitialized.value) return const SizedBox.shrink();
             return Positioned.fill(
               child: Container(
-                color: Colors.black.withValues(alpha: 0.8),
+                color: Colors.black.withValues(alpha: 0.85),
                 child: const Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       CircularProgressIndicator(
-                        color: AppTheme.primaryBlue,
-                        strokeWidth: 3,
+                        color: AppTheme.accentTeal,
+                        strokeWidth: 3.5,
                       ),
                       SizedBox(height: 20),
                       Text(
-                        'Initializing Scanner...',
+                        'Initializing 3D Room Scanner...',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: Colors.white,
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -139,37 +100,96 @@ class _ScanningScreenState extends State<ScanningScreen>
             );
           }),
 
-          // Tap to start scanning
+          // Post-Scan Processing & 3D Reconstruction Overlay
           Obx(() {
-            if (!controller.isInitialized.value || controller.isScanning.value) {
-              return const SizedBox.shrink();
-            }
-            return Positioned(
-              bottom: MediaQuery.of(context).padding.bottom + 120,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: controller.startScanning,
+            if (!controller.isProcessing.value) return const SizedBox.shrink();
+            return Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.9),
+                child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
+                    margin: const EdgeInsets.symmetric(horizontal: 36),
+                    padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentTeal.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                      color: const Color(0xFF14141E),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                       border: Border.all(
                         color: AppTheme.accentTeal.withValues(alpha: 0.5),
+                        width: 1.5,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentTeal.withValues(alpha: 0.2),
+                          blurRadius: 24,
+                          spreadRadius: 2,
+                        ),
+                      ],
                     ),
-                    child: const Text(
-                      'Tap to Start Scanning',
-                      style: TextStyle(
-                        color: AppTheme.accentTeal,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedBuilder(
+                          animation: _processingAnimationController,
+                          builder: (context, child) {
+                            return Transform.rotate(
+                              angle: _processingAnimationController.value * 2 * 3.1415926535,
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppTheme.accentTeal,
+                                    width: 3,
+                                    style: BorderStyle.solid,
+                                  ),
+                                  gradient: SweepGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      AppTheme.accentTeal.withValues(alpha: 0.8),
+                                    ],
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.architecture_rounded,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Processing Scan Data...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Reconstructing 3D topology & aligning detected room boundaries to orthogonal layout...',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: const LinearProgressIndicator(
+                            backgroundColor: Color(0xFF232333),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentTeal),
+                            minHeight: 5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -217,7 +237,7 @@ class _ScanningScreenState extends State<ScanningScreen>
         );
       }
     } catch (e) {
-      debugPrint('Platform view error: $e');
+      debugPrint('Platform view creation error: $e');
     }
     return _buildDemoView();
   }
