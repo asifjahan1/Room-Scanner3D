@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../theme/app_theme.dart';
@@ -58,10 +61,9 @@ class _ScanningScreenState extends State<ScanningScreen>
                 onShutterTap: () async {
                   if (!controller.isRecording.value) {
                     await controller.startScanning();
-                  } else {
-                    // During continuous video recording, tapping the main red stop shutter triggers stop & process
-                    await controller.stopScanning();
                   }
+                  // Tap shutter button on right to manually record a wall/corner point in AR
+                  await controller.captureWall();
                 },
                 onDoneTap: () async {
                   await controller.stopScanning();
@@ -217,6 +219,11 @@ class _ScanningScreenState extends State<ScanningScreen>
           viewType: viewType,
           onPlatformViewCreated: (id) {
             controller.setupPlatformChannel(id);
+            Future.delayed(const Duration(milliseconds: 600), () {
+              if (!controller.isRecording.value) {
+                controller.startScanning();
+              }
+            });
           },
           creationParams: const <String, dynamic>{
             'showWireframe': true,
@@ -224,16 +231,40 @@ class _ScanningScreenState extends State<ScanningScreen>
           creationParamsCodec: const StandardMessageCodec(),
         );
       } else if (Platform.isAndroid) {
-        return AndroidView(
+        return PlatformViewLink(
           viewType: viewType,
-          onPlatformViewCreated: (id) {
-            controller.setupPlatformChannel(id);
+          surfaceFactory: (context, controller) {
+            return AndroidViewSurface(
+              controller: controller as AndroidViewController,
+              gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+            );
           },
-          creationParams: const <String, dynamic>{
-            'showWireframe': true,
-            'useDepthAPI': true,
+          onCreatePlatformView: (params) {
+            return PlatformViewsService.initSurfaceAndroidView(
+              id: params.id,
+              viewType: viewType,
+              layoutDirection: TextDirection.ltr,
+              creationParams: const <String, dynamic>{
+                'showWireframe': true,
+                'useDepthAPI': true,
+              },
+              creationParamsCodec: const StandardMessageCodec(),
+              onFocus: () {
+                params.onFocusChanged(true);
+              },
+            )
+              ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+              ..addOnPlatformViewCreatedListener((id) {
+                controller.setupPlatformChannel(id);
+                Future.delayed(const Duration(milliseconds: 600), () {
+                  if (!controller.isRecording.value) {
+                    controller.startScanning();
+                  }
+                });
+              })
+              ..create();
           },
-          creationParamsCodec: const StandardMessageCodec(),
         );
       }
     } catch (e) {

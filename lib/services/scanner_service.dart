@@ -129,6 +129,7 @@ class ScannerService {
       status: ScanStatus.completed,
       usdzFilePath: nativeResult['usdzPath'] as String?,
       jsonFilePath: nativeResult['jsonPath'] as String?,
+      isHeightMeasured: nativeResult['isHeightMeasured'] as bool? ?? false,
     );
   }
 }

@@ -270,6 +270,7 @@ class RoomScan {
   final ScanStatus status;
   final String? usdzFilePath;
   final String? jsonFilePath;
+  final bool isHeightMeasured;
 
   const RoomScan({
     required this.id,
@@ -291,6 +292,7 @@ class RoomScan {
     this.status = ScanStatus.idle,
     this.usdzFilePath,
     this.jsonFilePath,
+    this.isHeightMeasured = false,
   });
 
   int get doorCount => openings.where((o) => o.type == 'door').length;
@@ -316,6 +318,7 @@ class RoomScan {
     ScanStatus? status,
     String? usdzFilePath,
     String? jsonFilePath,
+    bool? isHeightMeasured,
   }) {
     return RoomScan(
       id: id ?? this.id,
@@ -337,6 +340,7 @@ class RoomScan {
       status: status ?? this.status,
       usdzFilePath: usdzFilePath ?? this.usdzFilePath,
       jsonFilePath: jsonFilePath ?? this.jsonFilePath,
+      isHeightMeasured: isHeightMeasured ?? this.isHeightMeasured,
     );
   }
 
@@ -360,6 +364,7 @@ class RoomScan {
         'status': status.name,
         'usdzFilePath': usdzFilePath,
         'jsonFilePath': jsonFilePath,
+        'isHeightMeasured': isHeightMeasured,
       };
 
   factory RoomScan.fromJson(Map<String, dynamic> json) {
@@ -397,6 +402,7 @@ class RoomScan {
       status: ScanStatus.values.byName(json['status'] as String? ?? 'idle'),
       usdzFilePath: json['usdzFilePath'] as String?,
       jsonFilePath: json['jsonFilePath'] as String?,
+      isHeightMeasured: json['isHeightMeasured'] as bool? ?? false,
     );
   }
 }

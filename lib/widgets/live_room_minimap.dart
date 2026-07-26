@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// Compact Live 3D Room Mini-Map visualization widget (Apple RoomPlan style)
-/// Positioned at the bottom-left corner during room scanning
+/// Transparent Live 3D Room Mini-Model (Apple RoomPlan & MeasureSquare dollhouse style).
+/// Floats seamlessly above the bottom Done button during 3D AR room capture.
 class LiveRoomMiniMap extends StatefulWidget {
   final int wallsDetected;
   final bool isScanning;
@@ -25,7 +25,7 @@ class _LiveRoomMiniMapState extends State<LiveRoomMiniMap>
   void initState() {
     super.initState();
     _rotationController = AnimationController(
-      duration: const Duration(seconds: 14),
+      duration: const Duration(seconds: 16),
       vsync: this,
     )..repeat();
   }
@@ -42,38 +42,20 @@ class _LiveRoomMiniMapState extends State<LiveRoomMiniMap>
       return const SizedBox.shrink();
     }
 
-    return Container(
-      width: 105,
-      height: 85,
-      decoration: BoxDecoration(
-        color: const Color(0xE6101018),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedBuilder(
-          animation: _rotationController,
-          builder: (context, child) {
-            return CustomPaint(
-              painter: _IsometricRoomPainter(
-                wallsDetected: widget.wallsDetected,
-                rotationAngle: _rotationController.value * 2 * pi,
-              ),
-            );
-          },
-        ),
+    // Completely transparent container so the 3D room model floats right over the camera video!
+    return SizedBox(
+      width: 180,
+      height: 130,
+      child: AnimatedBuilder(
+        animation: _rotationController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _IsometricRoomPainter(
+              wallsDetected: widget.wallsDetected,
+              rotationAngle: _rotationController.value * 2 * pi,
+            ),
+          );
+        },
       ),
     );
   }
@@ -91,17 +73,18 @@ class _IsometricRoomPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
-    final cy = size.height / 2 + 8;
-    final w = size.width * 0.42;
-    final h = size.height * 0.32;
-    final wallHeight = 24.0;
+    final cy = size.height / 2 + 12;
+    final w = size.width * 0.52;
+    final h = size.height * 0.40;
+    const wallHeight = 38.0;
 
-    // Floor points
+    // Projected floor boundary corners
     final f1 = _project3D(cx, cy, -w / 2, 0, -h / 2, rotationAngle);
     final f2 = _project3D(cx, cy, w / 2, 0, -h / 2, rotationAngle);
     final f3 = _project3D(cx, cy, w / 2, 0, h / 2, rotationAngle);
     final f4 = _project3D(cx, cy, -w / 2, 0, h / 2, rotationAngle);
 
+    // Floor base path
     final floorPath = Path()
       ..moveTo(f1.dx, f1.dy)
       ..lineTo(f2.dx, f2.dy)
@@ -110,52 +93,63 @@ class _IsometricRoomPainter extends CustomPainter {
       ..close();
 
     final floorFill = Paint()
-      ..color = Colors.white.withValues(alpha: 0.12)
+      ..color = Colors.white.withValues(alpha: 0.14)
       ..style = PaintingStyle.fill;
 
     final floorBorder = Paint()
-      ..color = Colors.white.withValues(alpha: 0.4)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 1.2;
 
     canvas.drawPath(floorPath, floorFill);
     canvas.drawPath(floorPath, floorBorder);
 
-    // Wall paints
+    // 3D Wall extruded rendering styles (Crisp White Apple RoomPlan AR aesthetic)
     final wallFill = Paint()
-      ..color = Colors.white.withValues(alpha: 0.2)
+      ..color = Colors.white.withValues(alpha: 0.28)
       ..style = PaintingStyle.fill;
 
     final wallBorder = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8;
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
     final glowBorder = Paint()
-      ..color = Colors.white.withValues(alpha: 0.5)
+      ..color = Colors.white.withValues(alpha: 0.65)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+      ..strokeWidth = 5.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
-    if (wallsDetected >= 1) {
+    // Determine how many walls to render (if 0 detected yet, render an initial glowing anchor corner)
+    final activeWalls = wallsDetected == 0 ? 1 : wallsDetected;
+
+    if (activeWalls >= 1) {
       _drawWallPanel(canvas, f1, f2, wallHeight, wallFill, wallBorder, glowBorder);
     }
-    if (wallsDetected >= 2) {
+    if (activeWalls >= 2) {
       _drawWallPanel(canvas, f2, f3, wallHeight, wallFill, wallBorder, glowBorder);
     }
-    if (wallsDetected >= 3) {
+    if (activeWalls >= 3) {
       _drawWallPanel(canvas, f3, f4, wallHeight, wallFill, wallBorder, glowBorder);
     }
-    if (wallsDetected >= 4) {
+    if (activeWalls >= 4) {
       _drawWallPanel(canvas, f4, f1, wallHeight, wallFill, wallBorder, glowBorder);
     }
 
+    // Glowing anchor vertex joints at corner junctions
+    final cornerGlow = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     final cornerDot = Paint()
-      ..color = const Color(0xFF00C7BE)
+      ..color = const Color(0xFF00E5FF)
       ..style = PaintingStyle.fill;
 
     for (final pt in [f1, f2, f3, f4]) {
-      canvas.drawCircle(pt, 2.0, cornerDot);
+      canvas.drawCircle(pt, 3.5, cornerGlow);
+      canvas.drawCircle(pt, 2.5, cornerDot);
     }
   }
 
