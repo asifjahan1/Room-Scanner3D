@@ -17,6 +17,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
     private var roomCaptureView: RoomCaptureView?
     private let channel: FlutterMethodChannel
     private var finalRoom: CapturedRoom?
+    private var latestRoom: CapturedRoom?
     private var isScanning = false
 
     init(frame: CGRect, viewIdentifier: Int64, arguments: Any?, binaryMessenger: FlutterBinaryMessenger) {
@@ -112,7 +113,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
 
     // MARK: - RoomCaptureViewDelegate
     func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: (Error)?) -> Bool {
-        return true
+        return false
     }
 
     func captureView(didPresent processedResult: CapturedRoom, error: (Error)?) {
@@ -210,6 +211,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
     
     // MARK: - RoomCaptureSessionDelegate
     func captureSession(_ session: RoomCaptureSession, didUpdate room: CapturedRoom) {
+        self.latestRoom = room
         let wallsDetected = room.walls.count
         let openingsDetected = room.doors.count + room.windows.count
         
@@ -248,7 +250,33 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
 
     func captureSession(_ session: RoomCaptureSession, didEndWith data: CapturedRoomData, error: (Error)?) {
         if let error = error {
-            channel.invokeMethod("onScanError", arguments: ["error": error.localizedDescription])
+            if let backupRoom = self.latestRoom, !backupRoom.walls.isEmpty {
+                self.sendScanResult(room: backupRoom)
+            } else {
+                channel.invokeMethod("onScanError", arguments: ["error": error.localizedDescription])
+            }
+            return
+        }
+        
+        Task {
+            do {
+                let builder = RoomBuilder(options: [.beautifyObjects])
+                let room = try await builder.capturedRoom(from: data)
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.finalRoom = room
+                    self.sendScanResult(room: room)
+                }
+            } catch {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    if let backupRoom = self.latestRoom, !backupRoom.walls.isEmpty {
+                        self.sendScanResult(room: backupRoom)
+                    } else {
+                        self.channel.invokeMethod("onScanError", arguments: ["error": "Failed to process room geometry: \(error.localizedDescription)"])
+                    }
+                }
+            }
         }
     }
 }
