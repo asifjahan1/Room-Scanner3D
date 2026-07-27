@@ -101,8 +101,15 @@ class ArCoreScannerPlatformView(
     // Sensors for auxiliary IMU rotational vector fusion
     private var sensorManager: SensorManager? = null
     private var rotationSensor: Sensor? = null
+    private var stepSensor: Sensor? = null
     private var currentYaw = 0f
     private var currentPitch = 0f
+
+    // Step-based displacement tracking for Camera2 fallback mode
+    private var stepCount = 0
+    private var walkedPositionX = 0f
+    private var walkedPositionZ = 0f
+    private val stepLengthMeters = 0.65f
 
     private var lastReportedTrackingState: String = "good"
 
@@ -167,7 +174,11 @@ class ArCoreScannerPlatformView(
         try {
             sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
             rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            stepSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
             sensorManager?.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_GAME)
+            if (stepSensor != null) {
+                sensorManager?.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_FASTEST)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -198,13 +209,44 @@ class ArCoreScannerPlatformView(
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
 
     private fun initCameraEngine(width: Int, height: Int) {
-        // Direct native high-performance Camera2 pass-through to ensure guaranteed video rendering across ALL Android OEMs (Honor, Xiaomi, Huawei)
-        if (surfaceTexture != null) {
-            openCamera2Fallback(surfaceTexture!!, width, height)
-        } else {
+        if (surfaceTexture == null) {
             mainHandler.post {
                 channel.invokeMethod("onScanError", mapOf("error" to "Display surface texture unavailable."))
             }
+            return
+        }
+        val targetActivity = activity ?: (context as? Activity)
+        if (targetActivity != null) {
+            val availability = try {
+                ArCoreApk.getInstance().checkAvailability(targetActivity)
+            } catch (e: Exception) { null }
+
+            when {
+                availability == ArCoreApk.Availability.SUPPORTED_INSTALLED -> {
+                    try {
+                        initARCoreGLThread(surfaceTexture!!, width, height, targetActivity)
+                    } catch (e: Exception) {
+                        android.util.Log.w("ArCoreScannerView", "ARCore init failed, using Camera2 fallback", e)
+                        openCamera2Fallback(surfaceTexture!!, width, height)
+                    }
+                }
+                availability == ArCoreApk.Availability.SUPPORTED_NOT_INSTALLED ||
+                availability == ArCoreApk.Availability.SUPPORTED_APK_TOO_OLD -> {
+                    // Prompt user to install ARCore, use Camera2 meanwhile
+                    try {
+                        ArCoreApk.getInstance().requestInstall(targetActivity, true)
+                    } catch (e: Exception) {
+                        android.util.Log.w("ArCoreScannerView", "ARCore install prompt failed", e)
+                    }
+                    openCamera2Fallback(surfaceTexture!!, width, height)
+                }
+                else -> {
+                    // Device does not support ARCore at all
+                    openCamera2Fallback(surfaceTexture!!, width, height)
+                }
+            }
+        } else {
+            openCamera2Fallback(surfaceTexture!!, width, height)
         }
     }
 
@@ -457,6 +499,10 @@ class ArCoreScannerPlatformView(
     private fun startScan(result: MethodChannel.Result) {
         isScanning = true
         slamEngine.resetSession()
+        // Reset step-based displacement tracking
+        stepCount = 0
+        walkedPositionX = 0f
+        walkedPositionZ = 0f
         overlayView.startScanning()
         result.success(true)
     }
@@ -465,35 +511,55 @@ class ArCoreScannerPlatformView(
         if (!isScanning) {
             isScanning = true
             slamEngine.resetSession()
+            stepCount = 0
+            walkedPositionX = 0f
+            walkedPositionZ = 0f
             overlayView.startScanning()
         }
 
-        // Attempt to commit the targeted real-world coordinate to the boundary point cloud
-        var success = slamEngine.recordBoundaryPoint()
-        if (!success || isCamera2Fallback) {
-            // Tier 2: Real-world trigonometric projection from camera optics and hardware IMU rotation vectors
-            val pitchRad = Math.toRadians(abs(currentPitch).toDouble()).toFloat().coerceAtLeast(0.12f)
+        var success: Boolean
+        if (!isCamera2Fallback) {
+            // Tier 1: ARCore spatial tracking — use real 3D hit-test raycasts
+            success = slamEngine.recordBoundaryPoint()
+        } else {
+            // Tier 2: Fused Optical Raycast + Step-Counting Displacement
+            // Calculate optical vector from camera tilt & yaw aiming at floor corners
+            val pitchRad = Math.toRadians(kotlin.math.abs(currentPitch).toDouble()).toFloat().coerceAtLeast(0.12f)
             val yawRad = Math.toRadians(currentYaw.toDouble()).toFloat()
-            val eyeHeight = 1.45f
-            val groundDistance = minOf(7.5f, eyeHeight / kotlin.math.tan(pitchRad.toDouble()).toFloat())
-            val x = groundDistance * kotlin.math.sin(yawRad.toDouble()).toFloat()
-            val z = -groundDistance * kotlin.math.cos(yawRad.toDouble()).toFloat()
-            val newPoint = Vector3(x, 0f, z)
-            slamEngine.rawBoundaryPoints.add(newPoint)
-            slamEngine.latestTargetPoint = newPoint
-            success = true
+            val eyeHeight = 1.45f // Typical hand-held phone scanning height
+            val opticalDistance = minOf(8.5f, eyeHeight / kotlin.math.tan(pitchRad.toDouble()).toFloat())
+            val opticalX = opticalDistance * kotlin.math.sin(yawRad.toDouble()).toFloat()
+            val opticalZ = -opticalDistance * kotlin.math.cos(yawRad.toDouble()).toFloat()
+
+            // Fuse physical walking displacement with optical targeting ray
+            val newPoint = Vector3(walkedPositionX + opticalX, 0f, walkedPositionZ + opticalZ)
+
+            // Reject duplicate capture ONLY if optical + physical coordinates are identical (< 10cm)
+            val isDuplicate = slamEngine.rawBoundaryPoints.any { it.distanceTo(newPoint) < 0.10f }
+            if (!isDuplicate) {
+                slamEngine.rawBoundaryPoints.add(newPoint)
+                slamEngine.latestTargetPoint = newPoint
+                success = true
+            } else {
+                mainHandler.post {
+                    channel.invokeMethod("onWarning", "Aim your camera at a different corner or walk along the wall before capturing.")
+                }
+                success = false
+            }
         }
 
         if (!success) {
-            val guidance = slamEngine.lastQualityResult.guidanceMessage
-            channel.invokeMethod("onWarning", "Could not capture point: $guidance")
+            if (!isCamera2Fallback) {
+                val guidance = slamEngine.lastQualityResult.guidanceMessage
+                mainHandler.post { channel.invokeMethod("onWarning", "Could not capture point: $guidance") }
+            }
         } else {
             val numPoints = slamEngine.rawBoundaryPoints.size
             val progressData = mapOf(
-                "wallsDetected" to (numPoints / 2).coerceAtLeast(1),
+                "wallsDetected" to numPoints,
                 "openingsDetected" to 0,
-                "message" to "Boundary corner recorded ($numPoints total)",
-                "percentage" to minOf(1.0, numPoints / 8.0)
+                "message" to "Corner $numPoints recorded. Walk to the next corner.",
+                "percentage" to minOf(1.0, numPoints / 4.0)
             )
             mainHandler.post { channel.invokeMethod("onScanProgress", progressData) }
         }
@@ -549,14 +615,27 @@ class ArCoreScannerPlatformView(
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event == null || event.sensor.type != Sensor.TYPE_ROTATION_VECTOR) return
-        val rotMatrix = FloatArray(9)
-        SensorManager.getRotationMatrixFromVector(rotMatrix, event.values)
-        val orientation = FloatArray(3)
-        SensorManager.getOrientation(rotMatrix, orientation)
-        currentYaw = Math.toDegrees(orientation[0].toDouble()).toFloat()
-        currentPitch = Math.toDegrees(orientation[1].toDouble()).toFloat()
-        mainHandler.post { overlayView.updatePose(currentYaw, currentPitch) }
+        if (event == null) return
+        when (event.sensor.type) {
+            Sensor.TYPE_ROTATION_VECTOR -> {
+                val rotMatrix = FloatArray(9)
+                SensorManager.getRotationMatrixFromVector(rotMatrix, event.values)
+                val orientation = FloatArray(3)
+                SensorManager.getOrientation(rotMatrix, orientation)
+                currentYaw = Math.toDegrees(orientation[0].toDouble()).toFloat()
+                currentPitch = Math.toDegrees(orientation[1].toDouble()).toFloat()
+                mainHandler.post { overlayView.updatePose(currentYaw, currentPitch) }
+            }
+            Sensor.TYPE_STEP_DETECTOR -> {
+                // Only accumulate displacement while actively scanning in Camera2 fallback mode
+                if (isScanning && isCamera2Fallback) {
+                    stepCount++
+                    val yawRad = Math.toRadians(currentYaw.toDouble())
+                    walkedPositionX += (stepLengthMeters * kotlin.math.sin(yawRad)).toFloat()
+                    walkedPositionZ += (-stepLengthMeters * kotlin.math.cos(yawRad)).toFloat()
+                }
+            }
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}

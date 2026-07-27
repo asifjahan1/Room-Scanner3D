@@ -10,6 +10,7 @@ import SceneKit
  */
 class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, ARSessionDelegate {
 
+    private let containerView: UIView
     private let sceneView: ARSCNView
     private let channel: FlutterMethodChannel
     private var isScanning = false
@@ -28,10 +29,15 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
     private var lastPosition: SIMD3<Float> = .zero
 
     init(frame: CGRect, viewIdentifier: Int64, arguments: Any?, binaryMessenger: FlutterBinaryMessenger) {
-        self.sceneView = ARSCNView(frame: frame)
+        let actualFrame = frame == .zero ? UIScreen.main.bounds : frame
+        self.containerView = UIView(frame: actualFrame)
+        self.containerView.backgroundColor = .black
+        self.sceneView = ARSCNView(frame: actualFrame)
         self.channel = FlutterMethodChannel(name: "com.app.liddar/room_plan_view_\(viewIdentifier)", binaryMessenger: binaryMessenger)
         super.init()
 
+        sceneView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        containerView.addSubview(sceneView)
         sceneView.delegate = self
         sceneView.session.delegate = self
         sceneView.automaticallyUpdatesLighting = true
@@ -40,7 +46,7 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
     }
 
     func view() -> UIView {
-        return sceneView
+        return containerView
     }
 
     private func setupHUD() {

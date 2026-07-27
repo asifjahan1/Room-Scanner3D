@@ -13,9 +13,7 @@ void main() async {
   await LocalStorage().init();
 
   // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(

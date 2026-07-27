@@ -12,8 +12,8 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    
-    // Register scanner plugin
-    ScannerPlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "ScannerPlugin")!)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ScannerPlugin") {
+      ScannerPlugin.register(with: registrar)
+    }
   }
 }

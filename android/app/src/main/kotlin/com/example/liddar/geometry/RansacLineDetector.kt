@@ -20,19 +20,22 @@ class RansacLineDetector(
      */
     fun extractWallSegments(points: List<Vector3>, minSegmentLength: Float = 0.45f): List<LineSegment2D> {
         if (points.size < 2) return emptyList()
-        if (points.size < minInlierCount && points.size >= 2) {
-            // If we have manual capture taps (< 4 taps), connect consecutive verified taps cleanly without forced boxes
+        if (points.size in 2..32) {
+            // Manual Corner Capture Mode: Connect consecutive verified corner taps cleanly into wall segments without forcing artificial boxes
             val segments = mutableListOf<LineSegment2D>()
-            for (i in 0 until points.size - 1) {
+            val n = points.size
+            val count = if (n >= 3) n else (n - 1)
+            for (i in 0 until count) {
                 val p1 = points[i].to2D()
-                val p2 = points[i + 1].to2D()
-                if (p1.distanceTo(p2) >= 0.2f) {
+                val p2 = points[(i + 1) % n].to2D()
+                if (p1.distanceTo(p2) >= 0.10f) {
                     segments.add(LineSegment2D(p1, p2))
                 }
             }
-            return mergeCollinearSegments(segments)
+            if (segments.isNotEmpty()) {
+                return mergeCollinearSegments(segments)
+            }
         }
-
         val remainingPoints = points.map { it.to2D() }.toMutableList()
         val detectedLines = mutableListOf<LineSegment2D>()
 

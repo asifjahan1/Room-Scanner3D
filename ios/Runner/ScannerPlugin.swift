@@ -13,6 +13,7 @@ public class ScannerPlugin: NSObject, FlutterPlugin {
 
         // Register universal room scanner view factory for both LiDAR and non-LiDAR hardware
         let factory = RoomPlanViewFactory(messenger: registrar.messenger())
+        registrar.register(factory, withId: "ios-roomplan-view")
         registrar.register(factory, withId: "com.app.liddar/room_plan_view")
     }
 
@@ -30,12 +31,37 @@ public class ScannerPlugin: NSObject, FlutterPlugin {
             isSupported = ARWorldTrackingConfiguration.isSupported
             #endif
             result(isSupported)
-        case "hasLidar":
+        case "hasLidar", "hasLiDAR":
             var hasLidar = false
             if #available(iOS 14.0, *) {
                 hasLidar = ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth)
             }
             result(hasLidar)
+        case "checkDeviceCapabilities":
+            var hasLidar = false
+            if #available(iOS 14.0, *) {
+                hasLidar = ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth)
+            }
+            var isSupported = false
+            #if canImport(RoomPlan)
+            if #available(iOS 16.0, *) {
+                isSupported = RoomCaptureSession.isSupported || ARWorldTrackingConfiguration.isSupported
+            } else {
+                isSupported = ARWorldTrackingConfiguration.isSupported
+            }
+            #else
+            isSupported = ARWorldTrackingConfiguration.isSupported
+            #endif
+            let tier = hasLidar ? "TIER_LIDAR" : (isSupported ? "TIER_CAMERA_SENSOR" : "UNSUPPORTED")
+            result([
+                "platform": "ios",
+                "tier": tier,
+                "hasLiDAR": hasLidar,
+                "hasARCore": false,
+                "hasDepthApi": hasLidar
+            ])
+        case "startScan", "stopScan", "cancelScan":
+            result(true)
         default:
             result(FlutterMethodNotImplemented)
         }

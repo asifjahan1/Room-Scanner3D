@@ -11,15 +11,18 @@ import RoomPlan
  */
 #if canImport(RoomPlan)
 @available(iOS 16.0, *)
-class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate, RoomCaptureSessionDelegate {
+class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate, RoomCaptureSessionDelegate, NSCoding {
     
-    private let roomCaptureView: RoomCaptureView
+    private let containerView: UIView
+    private var roomCaptureView: RoomCaptureView?
     private let channel: FlutterMethodChannel
     private var finalRoom: CapturedRoom?
     private var isScanning = false
 
     init(frame: CGRect, viewIdentifier: Int64, arguments: Any?, binaryMessenger: FlutterBinaryMessenger) {
-        self.roomCaptureView = RoomCaptureView(frame: frame)
+        let actualFrame = frame == .zero ? UIScreen.main.bounds : frame
+        self.containerView = UIView(frame: actualFrame)
+        self.containerView.backgroundColor = .black
         self.channel = FlutterMethodChannel(name: "com.app.liddar/room_plan_view_\(viewIdentifier)", binaryMessenger: binaryMessenger)
         super.init()
         
@@ -27,13 +30,25 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
         setupMethodCallHandler()
     }
 
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    func encode(with coder: NSCoder) {
+    }
+
     func view() -> UIView {
-        return roomCaptureView
+        return containerView
     }
 
     private func setupRoomCaptureView() {
-        roomCaptureView.captureSession.delegate = self
-        roomCaptureView.delegate = self
+        let roomView = RoomCaptureView(frame: containerView.bounds)
+        roomView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        containerView.addSubview(roomView)
+        self.roomCaptureView = roomView
+        
+        roomView.captureSession.delegate = self
+        roomView.delegate = self
     }
 
     private func setupMethodCallHandler() {
@@ -58,13 +73,17 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
     }
 
     private func startScan(result: @escaping FlutterResult) {
-        guard RoomCaptureSession.isSupported else {
+        guard RoomCaptureSession.isSupported, let roomView = roomCaptureView else {
             result(FlutterError(code: "UNSUPPORTED", message: "LiDAR Pro sensor required for native RoomPlan", details: nil))
             return
         }
 
+        if roomView.frame == .zero || roomView.bounds.width == 0 {
+            roomView.frame = containerView.bounds == .zero ? UIScreen.main.bounds : containerView.bounds
+        }
+
         let configuration = RoomCaptureSession.Configuration()
-        roomCaptureView.captureSession.run(configuration: configuration)
+        roomView.captureSession.run(configuration: configuration)
         isScanning = true
         channel.invokeMethod("onTrackingState", arguments: "good")
         result(true)
@@ -81,13 +100,13 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
 
     private func stopScan(result: @escaping FlutterResult) {
         isScanning = false
-        roomCaptureView.captureSession.stop()
+        roomCaptureView?.captureSession.stop()
         result(true)
     }
 
     private func cancelScan(result: @escaping FlutterResult) {
         isScanning = false
-        roomCaptureView.captureSession.stop()
+        roomCaptureView?.captureSession.stop()
         result(true)
     }
 
