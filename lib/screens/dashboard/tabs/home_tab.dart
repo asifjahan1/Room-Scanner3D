@@ -183,7 +183,7 @@ class HomeTab extends StatelessWidget {
                             onPressed: () => controller.toggleClockIn(),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(height: 12),
                         Expanded(
                           child: PerfektButton(
                             label: controller.isOnBreak.value

@@ -9,22 +9,69 @@ import 'core/storage/local_storage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize local storage & settings before running app
-  await LocalStorage().init();
+  // Protect against default White Screen of Death on iOS builds
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: const Color(0xFF0F172A),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.build_circle_outlined,
+                  color: Color(0xFF155DFC),
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'PerfektWerk Workspace',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  details.exceptionAsString(),
+                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  };
 
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Safe async initialization with timeout to guarantee runApp launches immediately
+  try {
+    await LocalStorage().init().timeout(const Duration(seconds: 3));
+  } catch (e) {
+    debugPrint('Storage intialization fallback: $e');
+  }
 
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: AppTheme.bgDark,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  // Set preferred orientations & system overlay styles safely
+  try {
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: AppTheme.bgDark,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+  } catch (e) {
+    debugPrint('System overlay style fallback: $e');
+  }
 
   runApp(const RoomScannerApp());
 }
@@ -41,6 +88,9 @@ class RoomScannerApp extends StatelessWidget {
       initialBinding: AppBinding(),
       initialRoute: AppRoutes.welcome,
       getPages: AppRoutes.pages,
+      defaultTransition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 250),
+      color: const Color(0xFF0F172A),
     );
   }
 }

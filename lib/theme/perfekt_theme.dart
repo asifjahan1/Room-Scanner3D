@@ -60,13 +60,15 @@ class PerfektTheme {
   static final BorderRadius radiusInput = BorderRadius.circular(12);
   static final BorderRadius radiusPill = BorderRadius.circular(999);
 
-  // Typography helpers
+  // Typography helpers with zero-lag system fallbacks
   static TextStyle fontBold(double size, {Color color = textDark}) {
     return GoogleFonts.inter(
       fontSize: size,
       fontWeight: FontWeight.w700,
       color: color,
       letterSpacing: -0.5,
+    ).copyWith(
+      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
     );
   }
 
@@ -76,6 +78,8 @@ class PerfektTheme {
       fontWeight: FontWeight.w600,
       color: color,
       letterSpacing: -0.3,
+    ).copyWith(
+      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
     );
   }
 
@@ -84,6 +88,8 @@ class PerfektTheme {
       fontSize: size,
       fontWeight: FontWeight.w500,
       color: color,
+    ).copyWith(
+      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
     );
   }
 
@@ -92,6 +98,8 @@ class PerfektTheme {
       fontSize: size,
       fontWeight: FontWeight.w400,
       color: color,
+    ).copyWith(
+      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
     );
   }
 }
