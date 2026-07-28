@@ -49,6 +49,16 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
         return containerView
     }
 
+    private func invokeOnMain(_ method: String, _ arguments: Any?) {
+        if Thread.isMainThread {
+            self.channel.invokeMethod(method, arguments: arguments)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.channel.invokeMethod(method, arguments: arguments)
+            }
+        }
+    }
+
     private func setupHUD() {
         let size: CGFloat = 50.0
         let reticlePath = UIBezierPath(ovalIn: CGRect(x: -size / 2, y: -size / 2, width: size, height: size))
@@ -107,7 +117,7 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
             startScan(result: { _ in })
         }
         guard let pt = latestAimPoint else {
-            channel.invokeMethod("onWarning", arguments: "Could not capture point: \(lastGuidance)")
+            invokeOnMain("onWarning", "Could not capture point: \(lastGuidance)")
             result(false)
             return
         }
@@ -134,7 +144,7 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
             "message": "Boundary point captured (\(numPoints) total)",
             "percentage": min(1.0, Double(numPoints) / 8.0)
         ]
-        channel.invokeMethod("onScanProgress", arguments: progressData)
+        invokeOnMain("onScanProgress", progressData)
         result(true)
     }
 
@@ -272,7 +282,7 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
 
         if currentStatus != lastTrackingStateString {
             lastTrackingStateString = currentStatus
-            channel.invokeMethod("onTrackingState", arguments: currentStatus)
+            invokeOnMain("onTrackingState", currentStatus)
         }
 
         // 2. Perform center screen precision raycasting against floor planes
@@ -312,6 +322,6 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
             "message": guidance,
             "percentage": min(1.0, Double(numPoints) / 8.0)
         ]
-        channel.invokeMethod("onScanProgress", arguments: progressData)
+        invokeOnMain("onScanProgress", progressData)
     }
 }

@@ -42,6 +42,16 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
         return containerView
     }
 
+    private func invokeOnMain(_ method: String, _ arguments: Any?) {
+        if Thread.isMainThread {
+            self.channel.invokeMethod(method, arguments: arguments)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.channel.invokeMethod(method, arguments: arguments)
+            }
+        }
+    }
+
     private func setupRoomCaptureView() {
         let roomView = RoomCaptureView(frame: containerView.bounds)
         roomView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -86,7 +96,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
         let configuration = RoomCaptureSession.Configuration()
         roomView.captureSession.run(configuration: configuration)
         isScanning = true
-        channel.invokeMethod("onTrackingState", arguments: "good")
+        invokeOnMain("onTrackingState", "good")
         result(true)
     }
 
@@ -95,7 +105,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
             startScan(result: { _ in })
         }
         // RoomPlan is completely autonomous; a user tap acts as a checkpoint verification
-        channel.invokeMethod("onInstruction", arguments: ["message": "LiDAR auto-detecting structural surfaces..."])
+        invokeOnMain("onInstruction", ["message": "LiDAR auto-detecting structural surfaces..."])
         result(true)
     }
 
@@ -118,7 +128,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
 
     func captureView(didPresent processedResult: CapturedRoom, error: (Error)?) {
         if let error = error {
-            channel.invokeMethod("onScanError", arguments: ["error": error.localizedDescription])
+            invokeOnMain("onScanError", ["error": error.localizedDescription])
             return
         }
         
@@ -205,7 +215,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
         }
 
         if wallsList.isEmpty && openingsList.isEmpty {
-            channel.invokeMethod("onScanError", arguments: ["error": "Could not detect structures. Look at the floor edge and slowly sweep across room corners."])
+            invokeOnMain("onScanError", ["error": "Could not detect structures. Look at the floor edge and slowly sweep across room corners."])
             return
         }
 
@@ -236,7 +246,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
             "isHeightMeasured": true // LiDAR accurately measures ceiling heights natively!
         ]
 
-        channel.invokeMethod("onScanComplete", arguments: resultData)
+        invokeOnMain("onScanComplete", resultData)
     }
     
     // MARK: - RoomCaptureSessionDelegate
@@ -261,7 +271,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
             "percentage": progress
         ]
         
-        channel.invokeMethod("onScanProgress", arguments: progressData)
+        invokeOnMain("onScanProgress", progressData)
     }
 
     func captureSession(_ session: RoomCaptureSession, didProvide instruction: RoomCaptureSession.Instruction) {
@@ -275,7 +285,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
         case .lowTexture: msg = "Point camera at textured surfaces"
         @unknown default: msg = "Scanning room..."
         }
-        channel.invokeMethod("onInstruction", arguments: ["message": msg])
+        invokeOnMain("onInstruction", ["message": msg])
     }
 
     func captureSession(_ session: RoomCaptureSession, didEndWith data: CapturedRoomData, error: (Error)?) {
@@ -283,7 +293,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
             if let backupRoom = self.latestRoom {
                 self.sendScanResult(room: backupRoom)
             } else {
-                channel.invokeMethod("onScanError", arguments: ["error": error.localizedDescription])
+                invokeOnMain("onScanError", ["error": error.localizedDescription])
             }
             return
         }
@@ -303,7 +313,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
                     if let backupRoom = self.latestRoom {
                         self.sendScanResult(room: backupRoom)
                     } else {
-                        self.channel.invokeMethod("onScanError", arguments: ["error": "Failed to process room geometry: \(error.localizedDescription)"])
+                        self.invokeOnMain("onScanError", ["error": "Failed to process room geometry: \(error.localizedDescription)"])
                     }
                 }
             }
