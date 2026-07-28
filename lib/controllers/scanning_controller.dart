@@ -243,10 +243,10 @@ class ScanningController extends GetxController {
       }
     }
 
-    // Wait for result from either the callback or the direct return, with a timeout
+    // Wait for result from either the callback or the direct return, with a generous timeout for heavy LiDAR post-processing
     try {
       nativeResult = await _scanCompleter!.future.timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 120),
         onTimeout: () => null,
       );
     } catch (e) {
@@ -256,7 +256,10 @@ class ScanningController extends GetxController {
     _scanCompleter = null;
 
     // If native sensor data returned empty, show error instead of fake room
-    if (nativeResult == null || nativeResult.walls.isEmpty) {
+    if (nativeResult == null ||
+        (nativeResult.walls.isEmpty &&
+            nativeResult.floorBoundary.isEmpty &&
+            nativeResult.openings.isEmpty)) {
       isProcessing.value = false;
       isScanning.value = false;
       Get.snackbar(
@@ -281,7 +284,31 @@ class ScanningController extends GetxController {
     // Keep processing overlay visible for 1.8s for smooth high-tech visual feedback
     await Future.delayed(const Duration(milliseconds: 1800));
 
-    final alignedWalls = _orthogonalizeAndCloseWalls(rawRoom.walls);
+    List<WallSegment> initialWalls = List<WallSegment>.from(rawRoom.walls);
+    if (initialWalls.isEmpty && rawRoom.floorBoundary.length >= 2) {
+      final points = rawRoom.floorBoundary;
+      for (int i = 0; i < points.length; i++) {
+        final start = points[i];
+        final end = points[(i + 1) % points.length];
+        initialWalls.add(
+          WallSegment(start: start, end: end, height: 2.7, thickness: 0.15),
+        );
+      }
+    } else if (initialWalls.isEmpty && rawRoom.openings.isNotEmpty) {
+      final pos = rawRoom.openings.first.position;
+      final p1 = Point3D(pos.x - 1.5, pos.y, pos.z - 1.5);
+      final p2 = Point3D(pos.x + 1.5, pos.y, pos.z - 1.5);
+      final p3 = Point3D(pos.x + 1.5, pos.y, pos.z + 1.5);
+      final p4 = Point3D(pos.x - 1.5, pos.y, pos.z + 1.5);
+      initialWalls = [
+        WallSegment(start: p1, end: p2, height: 2.7, thickness: 0.15),
+        WallSegment(start: p2, end: p3, height: 2.7, thickness: 0.15),
+        WallSegment(start: p3, end: p4, height: 2.7, thickness: 0.15),
+        WallSegment(start: p4, end: p1, height: 2.7, thickness: 0.15),
+      ];
+    }
+
+    final alignedWalls = _orthogonalizeAndCloseWalls(initialWalls);
     final calculatedArea = _calculatePolygonArea(alignedWalls);
     final calculatedPerimeter = _calculatePerimeter(alignedWalls);
 

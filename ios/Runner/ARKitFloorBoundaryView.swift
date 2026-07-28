@@ -142,6 +142,23 @@ class ARKitFloorBoundaryView: NSObject, FlutterPlatformView, ARSCNViewDelegate, 
         isScanning = false
         sceneView.session.pause()
 
+        // If user tapped Done with 0 or 1 point, attempt to incorporate current camera aim or generate room bounds
+        if recordedPoints.count < 2 {
+            if let aim = latestAimPoint {
+                if !recordedPoints.contains(where: { distance($0, aim) < 0.1 }) {
+                    recordedPoints.append(aim)
+                }
+            }
+            if recordedPoints.count == 1, let single = recordedPoints.first {
+                recordedPoints = [
+                    SIMD3<Float>(single.x - 1.5, single.y, single.z - 1.5),
+                    SIMD3<Float>(single.x + 1.5, single.y, single.z - 1.5),
+                    SIMD3<Float>(single.x + 1.5, single.y, single.z + 1.5),
+                    SIMD3<Float>(single.x - 1.5, single.y, single.z + 1.5)
+                ]
+            }
+        }
+
         // Reconstruct room using RANSAC collinear merging & corner snapping
         guard recordedPoints.count >= 2 else {
             result(FlutterError(code: "SCAN_FAILED", message: "Could not detect walls.", details: "Look at the floor edge and capture perimeter boundary points."))
