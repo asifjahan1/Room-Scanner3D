@@ -1,12 +1,10 @@
 import 'dart:math';
-import 'package:flutter/material.dart';
 import '../../models/room_scan.dart';
 import '../../core/utils/measurement_utils.dart';
 
 /// Production CAD Exporters (AutoCAD DXF, Vector SVG, 3D Mesh OBJ/GLB).
 /// Converts true AR real-world measured coordinates into standard commercial engineering formats.
 class CadExporters {
-
   // ─── AUTO CAD DXF R12 EXPORTER ───
   static String exportDxf(RoomScan scan) {
     final buffer = StringBuffer();
@@ -26,10 +24,10 @@ class CadExporters {
     buffer.writeln('0\nTABLE');
     buffer.writeln('2\nLAYER');
     buffer.writeln('70\n4'); // Number of layers
-    _addDxfLayer(buffer, 'WALLS', 7);         // White/Black default
-    _addDxfLayer(buffer, 'OPENINGS', 3);      // Green for doors/windows
-    _addDxfLayer(buffer, 'DIMENSIONS', 1);    // Red for measurement labels
-    _addDxfLayer(buffer, 'FLOOR_BOUNDARY', 5);// Blue for perimeter polygon
+    _addDxfLayer(buffer, 'WALLS', 7); // White/Black default
+    _addDxfLayer(buffer, 'OPENINGS', 3); // Green for doors/windows
+    _addDxfLayer(buffer, 'DIMENSIONS', 1); // Red for measurement labels
+    _addDxfLayer(buffer, 'FLOOR_BOUNDARY', 5); // Blue for perimeter polygon
     buffer.writeln('0\nENDTAB');
     buffer.writeln('0\nENDSEC');
 
@@ -38,11 +36,18 @@ class CadExporters {
     buffer.writeln('2\nENTITIES');
 
     // Draw Floor Perimeter Boundary on FLOOR_BOUNDARY layer
-    if (scan.floorBoundary != null && scan.floorBoundary!.length >= 2) {
-      final pts = scan.floorBoundary!;
+    if (scan.floorBoundary.length >= 2) {
+      final pts = scan.floorBoundary;
       for (int i = 0; i < pts.length; i++) {
         final next = (i + 1) % pts.length;
-        _addDxfLine(buffer, 'FLOOR_BOUNDARY', pts[i].x, pts[i].z, pts[next].x, pts[next].z);
+        _addDxfLine(
+          buffer,
+          'FLOOR_BOUNDARY',
+          pts[i].x,
+          pts[i].z,
+          pts[next].x,
+          pts[next].z,
+        );
       }
     }
 
@@ -97,7 +102,14 @@ class CadExporters {
     buf.writeln('6\nCONTINUOUS');
   }
 
-  static void _addDxfLine(StringBuffer buf, String layer, double x1, double y1, double x2, double y2) {
+  static void _addDxfLine(
+    StringBuffer buf,
+    String layer,
+    double x1,
+    double y1,
+    double x2,
+    double y2,
+  ) {
     buf.writeln('0\nLINE');
     buf.writeln('8\n$layer');
     buf.writeln('10\n${x1.toStringAsFixed(4)}');
@@ -107,7 +119,6 @@ class CadExporters {
     buf.writeln('21\n${y2.toStringAsFixed(4)}');
     buf.writeln('31\n0.0000');
   }
-
 
   // ─── VECTOR SVG ARCHITECTURAL EXPORTER ───
   static String exportSvg(RoomScan scan, {bool isMetric = true}) {
@@ -121,7 +132,10 @@ class CadExporters {
       maxZ = max(maxZ, max(wall.start.z, wall.end.z));
     }
     if (minX == double.infinity) {
-      minX = -3.0; maxX = 3.0; minZ = -3.0; maxZ = 3.0;
+      minX = -3.0;
+      maxX = 3.0;
+      minZ = -3.0;
+      maxZ = 3.0;
     }
 
     const scale = 120.0; // Pixels per meter
@@ -134,22 +148,38 @@ class CadExporters {
 
     final buffer = StringBuffer();
     buffer.writeln('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
-    buffer.writeln('<svg width="${width.round()}" height="${height.round()}" viewBox="0 0 ${width.round()} ${height.round()}" xmlns="http://www.w3.org/2000/svg">');
+    buffer.writeln(
+      '<svg width="${width.round()}" height="${height.round()}" viewBox="0 0 ${width.round()} ${height.round()}" xmlns="http://www.w3.org/2000/svg">',
+    );
     buffer.writeln('  <style>');
-    buffer.writeln('    .floor { fill: #f8f9fa; stroke: #dee2e6; stroke-width: 2px; }');
-    buffer.writeln('    .wall-fill { fill: #343a40; stroke: #212529; stroke-width: 2.5px; stroke-linejoin: round; }');
-    buffer.writeln('    .dim-line { stroke: #e63946; stroke-width: 1.5px; stroke-dasharray: 4,4; }');
-    buffer.writeln('    .dim-text { font-family: -apple-system, sans-serif; font-size: 14px; font-weight: bold; fill: #d90429; text-anchor: middle; }');
-    buffer.writeln('    .title-text { font-family: -apple-system, sans-serif; font-size: 20px; font-weight: bold; fill: #212529; }');
+    buffer.writeln(
+      '    .floor { fill: #f8f9fa; stroke: #dee2e6; stroke-width: 2px; }',
+    );
+    buffer.writeln(
+      '    .wall-fill { fill: #343a40; stroke: #212529; stroke-width: 2.5px; stroke-linejoin: round; }',
+    );
+    buffer.writeln(
+      '    .dim-line { stroke: #e63946; stroke-width: 1.5px; stroke-dasharray: 4,4; }',
+    );
+    buffer.writeln(
+      '    .dim-text { font-family: -apple-system, sans-serif; font-size: 14px; font-weight: bold; fill: #d90429; text-anchor: middle; }',
+    );
+    buffer.writeln(
+      '    .title-text { font-family: -apple-system, sans-serif; font-size: 20px; font-weight: bold; fill: #212529; }',
+    );
     buffer.writeln('  </style>');
     buffer.writeln('  <rect width="100%" height="100%" fill="#ffffff" />');
 
     // Title & Metadata
-    buffer.writeln('  <text x="30" y="45" class="title-text">${scan.label ?? "Architectural Room Plan"} (${MeasurementUtils.formatArea(scan.area ?? 0, isMetric: isMetric)})</text>');
+    buffer.writeln(
+      '  <text x="30" y="45" class="title-text">${scan.label ?? "Architectural Room Plan"} (${MeasurementUtils.formatArea(scan.area ?? 0, isMetric: isMetric)})</text>',
+    );
 
     // Draw Floor Polygon
-    if (scan.floorBoundary != null && scan.floorBoundary!.length >= 3) {
-      final polyPts = scan.floorBoundary!.map((p) => '${toScreenX(p.x)},${toScreenY(p.z)}').join(' ');
+    if (scan.floorBoundary.length >= 3) {
+      final polyPts = scan.floorBoundary
+          .map((p) => '${toScreenX(p.x)},${toScreenY(p.z)}')
+          .join(' ');
       buffer.writeln('  <polygon points="$polyPts" class="floor" />');
     }
 
@@ -162,7 +192,9 @@ class CadExporters {
       final thickPx = max(6.0, wall.thickness * scale);
 
       // Wall segment path with thickness cap
-      buffer.writeln('  <line x1="$x1" y1="$y1" x2="$x2" y2="$y2" stroke="#343a40" stroke-width="$thickPx" stroke-linecap="round" />');
+      buffer.writeln(
+        '  <line x1="$x1" y1="$y1" x2="$x2" y2="$y2" stroke="#343a40" stroke-width="$thickPx" stroke-linecap="round" />',
+      );
 
       // Dimension Labeling along wall midpoint
       final midX = (x1 + x2) / 2.0;
@@ -174,18 +206,22 @@ class CadExporters {
       if (angleDeg > 90 || angleDeg < -90) {
         angleDeg += 180;
       }
-      final lenStr = MeasurementUtils.formatLength(wall.length, isMetric: isMetric);
-      
+      final lenStr = MeasurementUtils.formatLength(
+        wall.length,
+        isMetric: isMetric,
+      );
+
       // Offset text slightly off centerline
       final normX = -sin(angleRad) * 22;
       final normY = cos(angleRad) * 22;
-      buffer.writeln('  <text x="${midX + normX}" y="${midY + normY}" transform="rotate(${angleDeg.roundAsFixed(1)}, ${midX + normX}, ${midY + normY})" class="dim-text">$lenStr</text>');
+      buffer.writeln(
+        '  <text x="${midX + normX}" y="${midY + normY}" transform="rotate(${angleDeg.roundAsFixed(1)}, ${midX + normX}, ${midY + normY})" class="dim-text">$lenStr</text>',
+      );
     }
 
     buffer.writeln('</svg>');
     return buffer.toString();
   }
-
 
   // ─── 3D MESH OBJ EXPORTER ───
   static String exportObj(RoomScan scan) {
@@ -224,15 +260,15 @@ class CadExporters {
       // Face indices (Quads converted to triangles)
       final v = vertexOffset;
       // Front face
-      buffer.writeln('f $v ${v+1} ${v+5}');
-      buffer.writeln('f $v ${v+5} ${v+4}');
+      buffer.writeln('f $v ${v + 1} ${v + 5}');
+      buffer.writeln('f $v ${v + 5} ${v + 4}');
       // Back face
-      buffer.writeln('f ${v+2} ${v+3} ${v+7}');
-      buffer.writeln('f ${v+2} ${v+7} ${v+6}');
+      buffer.writeln('f ${v + 2} ${v + 3} ${v + 7}');
+      buffer.writeln('f ${v + 2} ${v + 7} ${v + 6}');
       // Top cap
-      buffer.writeln('f ${v+4} ${v+5} ${v+6}');
-      buffer.writeln('f ${v+4} ${v+6} ${v+7}');
-      
+      buffer.writeln('f ${v + 4} ${v + 5} ${v + 6}');
+      buffer.writeln('f ${v + 4} ${v + 6} ${v + 7}');
+
       vertexOffset += 8;
     }
 
