@@ -28,6 +28,14 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera and LiDAR sensor to scan rooms and create 3D floor plans.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app requires local network access to allow Flutter debugging and Live Hot Reload over wireless network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartVmService._tcp</string>
+	</array>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
