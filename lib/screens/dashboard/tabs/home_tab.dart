@@ -170,7 +170,8 @@ class HomeTab extends StatelessWidget {
                   Obx(
                     () => Column(
                       children: [
-                        Expanded(
+                        SizedBox(
+                          width: double.infinity,
                           child: PerfektButton(
                             label: controller.isClockedIn.value
                                 ? 'CLOCK OUT'
@@ -184,7 +185,8 @@ class HomeTab extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Expanded(
+                        SizedBox(
+                          width: double.infinity,
                           child: PerfektButton(
                             label: controller.isOnBreak.value
                                 ? 'Resume'
