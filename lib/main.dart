@@ -39,7 +39,7 @@ class RoomScannerApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       initialBinding: AppBinding(),
-      initialRoute: AppRoutes.home,
+      initialRoute: AppRoutes.welcome,
       getPages: AppRoutes.pages,
     );
   }

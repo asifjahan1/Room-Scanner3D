@@ -10,10 +10,7 @@ import '../core/routes/app_routes.dart';
 class RoomLabelScreen extends StatefulWidget {
   final RoomScan? roomScan;
 
-  const RoomLabelScreen({
-    super.key,
-    this.roomScan,
-  });
+  const RoomLabelScreen({super.key, this.roomScan});
 
   @override
   State<RoomLabelScreen> createState() => _RoomLabelScreenState();
@@ -34,9 +31,10 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
   }
 
@@ -57,25 +55,34 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
 
   RoomType _mapPresetToRoomType(String id) {
     switch (id.toLowerCase()) {
-      case 'living_room': return RoomType.livingRoom;
-      case 'bedroom': return RoomType.bedroom;
-      case 'kitchen': return RoomType.kitchen;
-      case 'bathroom': return RoomType.bathroom;
-      case 'office': return RoomType.office;
-      case 'hallway': return RoomType.hallway;
-      default: return RoomType.custom;
+      case 'living_room':
+        return RoomType.livingRoom;
+      case 'bedroom':
+        return RoomType.bedroom;
+      case 'kitchen':
+        return RoomType.kitchen;
+      case 'bathroom':
+        return RoomType.bathroom;
+      case 'office':
+        return RoomType.office;
+      case 'hallway':
+        return RoomType.hallway;
+      default:
+        return RoomType.custom;
     }
   }
 
   Future<void> _navigateToFloorPlan() async {
     final originalScan = widget.roomScan ?? (Get.arguments as RoomScan?);
-    final finalLabel = _labelController.text.trim().isNotEmpty ? _labelController.text.trim() : 'Scanned Room';
-    
+    final finalLabel = _labelController.text.trim().isNotEmpty
+        ? _labelController.text.trim()
+        : 'Scanned Room';
+
     if (originalScan == null || originalScan.walls.isEmpty) {
       Get.snackbar(
         'No Scan Data',
         'No valid room scan data available. Please rescan the room.',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
         colorText: Colors.white,
       );
@@ -111,7 +118,10 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
             children: [
               // Top Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -198,7 +208,9 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                       ),
                       decoration: InputDecoration(
                         hintText: 'e.g. Master Bedroom, Basement',
-                        hintStyle: const TextStyle(color: AppTheme.textTertiary),
+                        hintStyle: const TextStyle(
+                          color: AppTheme.textTertiary,
+                        ),
                         filled: true,
                         fillColor: AppTheme.bgCard,
                         contentPadding: const EdgeInsets.symmetric(
@@ -207,15 +219,21 @@ class _RoomLabelScreenState extends State<RoomLabelScreen>
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                          borderSide: const BorderSide(
+                            color: AppTheme.borderDark,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                          borderSide: const BorderSide(
+                            color: AppTheme.borderDark,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.primaryBlue),
+                          borderSide: const BorderSide(
+                            color: AppTheme.primaryBlue,
+                          ),
                         ),
                       ),
                     ),

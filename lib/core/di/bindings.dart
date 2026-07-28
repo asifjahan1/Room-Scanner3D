@@ -7,6 +7,9 @@ import '../../controllers/project_controller.dart';
 import '../../controllers/scanning_controller.dart';
 import '../../controllers/floor_plan_controller.dart';
 import '../../controllers/export_controller.dart';
+import '../../controllers/auth_controller.dart';
+import '../../controllers/dashboard_controller.dart';
+import '../../controllers/weather_controller.dart';
 
 /// Root binding — registers all global services at app startup.
 class AppBinding extends Bindings {
@@ -24,6 +27,9 @@ class AppBinding extends Bindings {
 
     // Global Controllers
     Get.put(ProjectController(), permanent: true);
+    Get.put(AuthController(), permanent: true);
+    Get.lazyPut<DashboardController>(() => DashboardController(), fenix: true);
+    Get.lazyPut<WeatherController>(() => WeatherController(), fenix: true);
   }
 }
 
