@@ -37,12 +37,14 @@ class InvitationScreen extends StatelessWidget {
                   constraints: const BoxConstraints(maxWidth: 500),
 
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.72),
+                    color: Colors.white.withValues(alpha: .72),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(.55)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: .55),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(.08),
+                        color: Colors.black.withValues(alpha: .08),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),

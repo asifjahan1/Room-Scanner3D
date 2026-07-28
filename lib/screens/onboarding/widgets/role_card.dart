@@ -12,12 +12,12 @@ class RoleCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.45),
+        color: Colors.white.withValues(alpha: .45),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(.7)),
+        border: Border.all(color: Colors.white.withValues(alpha: .7)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.08),
+            color: Colors.black.withValues(alpha: .08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -44,7 +44,10 @@ class RoleCard extends StatelessWidget {
               color: const Color(0xff2563EB),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(.12), blurRadius: 12),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .12),
+                  blurRadius: 12,
+                ),
               ],
             ),
 
