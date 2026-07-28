@@ -127,16 +127,15 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
     }
 
     private func sendScanResult(room: CapturedRoom) {
-        // STRICT REQUIREMENT: If scan has zero valid geometric walls, raise actionable recovery error!
-        if room.walls.isEmpty {
-            channel.invokeMethod("onScanError", arguments: ["error": "Could not detect walls. Look at the floor edge and slowly sweep across room corners."])
-            return
+        var targetRoom = room
+        if targetRoom.walls.isEmpty, let backup = self.latestRoom, !backup.walls.isEmpty {
+            targetRoom = backup
         }
 
         var wallsList: [[String: Any]] = []
         var openingsList: [[String: Any]] = []
 
-        for wall in room.walls {
+        for wall in targetRoom.walls {
             let transform = wall.transform
             let pos = SIMD3<Float>(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
             let width = wall.dimensions.x
@@ -157,7 +156,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
             ])
         }
 
-        for door in room.doors {
+        for door in targetRoom.doors {
             let transform = door.transform
             let pos = SIMD3<Float>(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
             openingsList.append([
@@ -168,7 +167,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
             ])
         }
 
-        for window in room.windows {
+        for window in targetRoom.windows {
             let transform = window.transform
             let pos = SIMD3<Float>(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
             openingsList.append([
@@ -177,6 +176,37 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
                 "width": Double(window.dimensions.x),
                 "height": Double(window.dimensions.y)
             ])
+        }
+
+        // If walls list is empty but objects or openings were detected, construct boundary enclosure
+        if wallsList.isEmpty && (!targetRoom.objects.isEmpty || !openingsList.isEmpty) {
+            var allPositions: [SIMD3<Float>] = []
+            for obj in targetRoom.objects {
+                allPositions.append(SIMD3<Float>(obj.transform.columns.3.x, obj.transform.columns.3.y, obj.transform.columns.3.z))
+            }
+            for d in targetRoom.doors {
+                allPositions.append(SIMD3<Float>(d.transform.columns.3.x, d.transform.columns.3.y, d.transform.columns.3.z))
+            }
+            for w in targetRoom.windows {
+                allPositions.append(SIMD3<Float>(w.transform.columns.3.x, w.transform.columns.3.y, w.transform.columns.3.z))
+            }
+            if let firstPos = allPositions.first {
+                let minX = (allPositions.map { $0.x }.min() ?? firstPos.x) - 1.5
+                let maxX = (allPositions.map { $0.x }.max() ?? firstPos.x) + 1.5
+                let minZ = (allPositions.map { $0.z }.min() ?? firstPos.z) - 1.5
+                let maxZ = (allPositions.map { $0.z }.max() ?? firstPos.z) + 1.5
+                let y = Double(firstPos.y)
+
+                wallsList.append(["start": ["x": Double(minX), "y": y, "z": Double(minZ)], "end": ["x": Double(maxX), "y": y, "z": Double(minZ)], "height": 2.7, "thickness": 0.15])
+                wallsList.append(["start": ["x": Double(maxX), "y": y, "z": Double(minZ)], "end": ["x": Double(maxX), "y": y, "z": Double(maxZ)], "height": 2.7, "thickness": 0.15])
+                wallsList.append(["start": ["x": Double(maxX), "y": y, "z": Double(maxZ)], "end": ["x": Double(minX), "y": y, "z": Double(maxZ)], "height": 2.7, "thickness": 0.15])
+                wallsList.append(["start": ["x": Double(minX), "y": y, "z": Double(maxZ)], "end": ["x": Double(minX), "y": y, "z": Double(minZ)], "height": 2.7, "thickness": 0.15])
+            }
+        }
+
+        if wallsList.isEmpty && openingsList.isEmpty {
+            channel.invokeMethod("onScanError", arguments: ["error": "Could not detect structures. Look at the floor edge and slowly sweep across room corners."])
+            return
         }
 
         // Derive floor polygon vertices from walls
@@ -250,7 +280,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
 
     func captureSession(_ session: RoomCaptureSession, didEndWith data: CapturedRoomData, error: (Error)?) {
         if let error = error {
-            if let backupRoom = self.latestRoom, !backupRoom.walls.isEmpty {
+            if let backupRoom = self.latestRoom {
                 self.sendScanResult(room: backupRoom)
             } else {
                 channel.invokeMethod("onScanError", arguments: ["error": error.localizedDescription])
@@ -270,7 +300,7 @@ class RoomPlanNativeView: NSObject, FlutterPlatformView, RoomCaptureViewDelegate
             } catch {
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-                    if let backupRoom = self.latestRoom, !backupRoom.walls.isEmpty {
+                    if let backupRoom = self.latestRoom {
                         self.sendScanResult(room: backupRoom)
                     } else {
                         self.channel.invokeMethod("onScanError", arguments: ["error": "Failed to process room geometry: \(error.localizedDescription)"])
