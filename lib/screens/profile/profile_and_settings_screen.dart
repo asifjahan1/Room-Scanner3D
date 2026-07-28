@@ -97,7 +97,7 @@ class ProfileAndSettingsScreen extends StatelessWidget {
                       onPressed: () => Get.snackbar(
                         "Edit Profile",
                         "Personal details edit form active.",
-                        snackPosition: SnackPosition.BOTTOM,
+                        snackPosition: SnackPosition.TOP,
                       ),
                       child: Text(
                         "EDIT",

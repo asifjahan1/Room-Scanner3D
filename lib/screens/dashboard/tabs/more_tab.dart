@@ -35,9 +35,14 @@ class MoreTab extends StatelessWidget {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: PerfektTheme.primaryBlue, width: 2),
+                          border: Border.all(
+                            color: PerfektTheme.primaryBlue,
+                            width: 2,
+                          ),
                           image: const DecorationImage(
-                            image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250'),
+                            image: NetworkImage(
+                              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+                            ),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -64,17 +69,27 @@ class MoreTab extends StatelessWidget {
                       children: [
                         Text(
                           "Markus Steiner",
-                          style: PerfektTheme.fontBold(18, color: PerfektTheme.textDark),
+                          style: PerfektTheme.fontBold(
+                            18,
+                            color: PerfektTheme.textDark,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           "Senior Field Engineer @ Team Photo A",
-                          style: PerfektTheme.fontRegular(13, color: PerfektTheme.textMedium),
+                          style: PerfektTheme.fontRegular(
+                            13,
+                            color: PerfektTheme.textMedium,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: PerfektTheme.textLight, size: 24),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: PerfektTheme.textLight,
+                    size: 24,
+                  ),
                 ],
               ),
             ),
@@ -94,7 +109,11 @@ class MoreTab extends StatelessWidget {
                     icon: Icons.person_add_alt_1_outlined,
                     title: "New Lead",
                     subtitle: "Capture lead details & voice requirements",
-                    onTap: () => Get.snackbar("New Lead", "Capture lead details with audio dictation active.", snackPosition: SnackPosition.BOTTOM),
+                    onTap: () => Get.snackbar(
+                      "New Lead",
+                      "Capture lead details with audio dictation active.",
+                      snackPosition: SnackPosition.TOP,
+                    ),
                   ),
                   _buildDivider(),
 
@@ -121,7 +140,11 @@ class MoreTab extends StatelessWidget {
                     icon: Icons.history_rounded,
                     title: "Attendance History",
                     subtitle: "42 hours worked • Verified timesheet",
-                    onTap: () => Get.snackbar("Attendance History", "Summary: 42h worked of 168h monthly target.", snackPosition: SnackPosition.BOTTOM),
+                    onTap: () => Get.snackbar(
+                      "Attendance History",
+                      "Summary: 42h worked of 168h monthly target.",
+                      snackPosition: SnackPosition.TOP,
+                    ),
                   ),
                   _buildDivider(),
 
@@ -129,15 +152,24 @@ class MoreTab extends StatelessWidget {
                     icon: Icons.event_available_rounded,
                     title: "Availability",
                     subtitle: "Set weekly status (Available / Half / Off)",
-                    onTap: () => Get.snackbar("Availability", "Status set to 'Available' for October 21-25.", snackPosition: SnackPosition.BOTTOM),
+                    onTap: () => Get.snackbar(
+                      "Availability",
+                      "Status set to 'Available' for October 21-25.",
+                      snackPosition: SnackPosition.TOP,
+                    ),
                   ),
                   _buildDivider(),
 
                   _buildMenuItem(
                     icon: Icons.beach_access_rounded,
                     title: "Leave Requests",
-                    subtitle: "Current balance: 12 Days • Vacation & Sick leave",
-                    onTap: () => Get.snackbar("Leave Requests", "Current leave balance: 12 Days available.", snackPosition: SnackPosition.BOTTOM),
+                    subtitle:
+                        "Current balance: 12 Days • Vacation & Sick leave",
+                    onTap: () => Get.snackbar(
+                      "Leave Requests",
+                      "Current leave balance: 12 Days available.",
+                      snackPosition: SnackPosition.TOP,
+                    ),
                   ),
                   _buildDivider(),
 
@@ -153,7 +185,11 @@ class MoreTab extends StatelessWidget {
                     icon: Icons.bluetooth_connected_rounded,
                     title: "Device Connectivity",
                     subtitle: "Leica D1 & Laser Measure Pro connected",
-                    onTap: () => Get.snackbar("Device Connectivity", "Laser Measure Pro connected via Bluetooth.", snackPosition: SnackPosition.BOTTOM),
+                    onTap: () => Get.snackbar(
+                      "Device Connectivity",
+                      "Laser Measure Pro connected via Bluetooth.",
+                      snackPosition: SnackPosition.TOP,
+                    ),
                   ),
                   _buildDivider(),
 
@@ -169,7 +205,11 @@ class MoreTab extends StatelessWidget {
                     icon: Icons.support_agent_rounded,
                     title: "Help & Support",
                     subtitle: "Submit support ticket & live engineering chat",
-                    onTap: () => Get.snackbar("Help & Support", "Live support specialist ready.", snackPosition: SnackPosition.BOTTOM),
+                    onTap: () => Get.snackbar(
+                      "Help & Support",
+                      "Live support specialist ready.",
+                      snackPosition: SnackPosition.TOP,
+                    ),
                   ),
                   _buildDivider(),
 
@@ -191,7 +231,13 @@ class MoreTab extends StatelessWidget {
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, thickness: 1, indent: 64, endIndent: 20, color: Color(0xFFF1F5F9));
+    return const Divider(
+      height: 1,
+      thickness: 1,
+      indent: 64,
+      endIndent: 20,
+      color: Color(0xFFF1F5F9),
+    );
   }
 
   Widget _buildMenuItem({
@@ -220,7 +266,9 @@ class MoreTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDestructive
                     ? const Color(0xFFFEE2E2)
-                    : (isHighlighted ? const Color(0xFFEFF6FF) : PerfektTheme.surfaceGrey),
+                    : (isHighlighted
+                          ? const Color(0xFFEFF6FF)
+                          : PerfektTheme.surfaceGrey),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -228,7 +276,10 @@ class MoreTab extends StatelessWidget {
                   icon,
                   color: isDestructive
                       ? PerfektTheme.alertCritical
-                      : (iconColor ?? (isHighlighted ? PerfektTheme.primaryBlue : PerfektTheme.textMedium)),
+                      : (iconColor ??
+                            (isHighlighted
+                                ? PerfektTheme.primaryBlue
+                                : PerfektTheme.textMedium)),
                   size: 22,
                 ),
               ),
@@ -245,7 +296,10 @@ class MoreTab extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: PerfektTheme.fontRegular(12, color: PerfektTheme.textLight),
+                    style: PerfektTheme.fontRegular(
+                      12,
+                      color: PerfektTheme.textLight,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -254,7 +308,9 @@ class MoreTab extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: isDestructive ? PerfektTheme.alertCritical : PerfektTheme.textLight,
+              color: isDestructive
+                  ? PerfektTheme.alertCritical
+                  : PerfektTheme.textLight,
               size: 20,
             ),
           ],

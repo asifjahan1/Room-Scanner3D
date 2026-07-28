@@ -97,7 +97,7 @@ class LanguageSettingsScreen extends StatelessWidget {
                       Get.snackbar(
                         "Language",
                         "Language set to ${controller.selectedLanguage.value}.",
-                        snackPosition: SnackPosition.BOTTOM,
+                        snackPosition: SnackPosition.TOP,
                         backgroundColor: Colors.white,
                         colorText: PerfektTheme.textDark,
                       );

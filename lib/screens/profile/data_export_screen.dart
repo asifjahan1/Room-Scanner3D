@@ -163,7 +163,7 @@ class DataExportScreen extends StatelessWidget {
                             Get.snackbar(
                               "Data Export",
                               "Export archive requested! You will receive an email shortly.",
-                              snackPosition: SnackPosition.BOTTOM,
+                              snackPosition: SnackPosition.TOP,
                               backgroundColor: Colors.white,
                               colorText: PerfektTheme.textDark,
                             );

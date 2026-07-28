@@ -98,7 +98,7 @@ class SecuritySettingsScreen extends StatelessWidget {
                       Get.snackbar(
                         "Security",
                         "Password updated successfully.",
-                        snackPosition: SnackPosition.BOTTOM,
+                        snackPosition: SnackPosition.TOP,
                         backgroundColor: Colors.white,
                         colorText: PerfektTheme.textDark,
                       );
