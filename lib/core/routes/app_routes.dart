@@ -1,6 +1,10 @@
 import 'package:get/get.dart';
 import '../../models/room_scan.dart';
 import '../../screens/home_screen.dart';
+import '../../screens/scan_area_screen.dart';
+import '../../screens/measurement_entry_screen.dart';
+import '../../screens/laser_sync_screen.dart';
+import '../../screens/measurement_result_screen.dart';
 import '../../screens/scanning_screen.dart';
 import '../../screens/scan_complete_screen.dart';
 import '../../screens/room_label_screen.dart';
@@ -24,6 +28,7 @@ import '../../screens/tasks/offline_work_screen.dart';
 import '../../screens/progress/update_progress_screen.dart';
 import '../../screens/progress/progress_sent_screen.dart';
 import '../../screens/analysis/ubakus_analysis_screen.dart';
+import '../../screens/analysis/redo_needed_screen.dart';
 import '../../screens/materials/material_requests_screen.dart';
 import '../../screens/materials/create_material_request_screen.dart';
 import '../../screens/materials/material_request_sent_screen.dart';
@@ -46,6 +51,10 @@ class AppRoutes {
   AppRoutes._();
 
   static const String home = '/';
+  static const String scanArea = '/scan-area';
+  static const String measurementEntry = '/measurement-entry';
+  static const String laserSync = '/laser-sync';
+  static const String measurementResult = '/measurement-result';
   static const String scanning = '/scanning';
   static const String scanComplete = '/scan-complete';
   static const String roomLabel = '/room-label';
@@ -71,6 +80,7 @@ class AppRoutes {
   static const String updateProgress = '/update-progress';
   static const String progressSent = '/progress-sent';
   static const String ubakusAnalysis = '/ubakus-analysis';
+  static const String redoNeeded = '/redo-needed';
   static const String materialRequests = '/material-requests';
   static const String createMaterialRequest = '/create-material-request';
   static const String materialRequestSent = '/material-request-sent';
@@ -93,6 +103,10 @@ class AppRoutes {
 
   static List<GetPage> get pages => [
     GetPage(name: home, page: () => const HomeScreen()),
+    GetPage(name: scanArea, page: () => const ScanAreaScreen()),
+    GetPage(name: measurementEntry, page: () => const MeasurementEntryScreen()),
+    GetPage(name: laserSync, page: () => const LaserSyncScreen()),
+    GetPage(name: measurementResult, page: () => const MeasurementResultScreen()),
     GetPage(
       name: scanning,
       page: () => const ScanningScreen(),
@@ -130,7 +144,16 @@ class AppRoutes {
     GetPage(name: offlineWork, page: () => const OfflineWorkScreen()),
     GetPage(name: updateProgress, page: () => const UpdateProgressScreen()),
     GetPage(name: progressSent, page: () => const ProgressSentScreen()),
-    GetPage(name: ubakusAnalysis, page: () => const UbakusAnalysisScreen()),
+    GetPage(
+      name: ubakusAnalysis,
+      page: () => const UbakusAnalysisScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: redoNeeded,
+      page: () => const RedoNeededScreen(),
+      transition: Transition.downToUp,
+    ),
     GetPage(name: materialRequests, page: () => const MaterialRequestsScreen()),
     GetPage(
       name: createMaterialRequest,

@@ -11,6 +11,13 @@ void main() async {
 
   // Protect against default White Screen of Death on iOS builds
   ErrorWidget.builder = (FlutterErrorDetails details) {
+    debugPrint('=== FLUTTER ERROR CAUGHT BY ERROR WIDGET ===');
+    debugPrint(details.exceptionAsString());
+    if (details.stack != null) {
+      debugPrintStack(stackTrace: details.stack);
+    }
+    debugPrint('==============================================');
+
     return Material(
       color: const Color(0xFF0F172A),
       child: SafeArea(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+// import 'package:permission_handler/permission_handler.dart';
 import '../core/routes/app_routes.dart';
 
 /// Dashboard and shift session controller for PerfektWerk OS.
@@ -134,8 +135,13 @@ class DashboardController extends GetxController {
 
   /// CRITICAL REQUIREMENT: Access existing 3D LiDAR Room Scanner feature
   /// WITHOUT changing or disrupting existing core scanning code.
-  void launchLiDARScanner() {
-    // Navigates directly to the original LiDAR root screen
-    Get.toNamed(AppRoutes.home);
+  Future<void> launchLiDARScanner([String? taskName]) async {
+    if (taskName != null && taskName.toLowerCase() == 'room') {
+      // Navigate to the Scan Area screen (LiDAR flow)
+      Get.toNamed(AppRoutes.scanArea, arguments: {'task': taskName});
+    } else {
+      // Navigate to Measurement Entry screen (Laser flow)
+      Get.toNamed(AppRoutes.measurementEntry, arguments: taskName != null ? {'task': taskName} : null);
+    }
   }
 }

@@ -294,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen>
                     // Main Hero Action Card - New Scan
                     _buildNewScanCard(),
 
+                    /* --- DEMO SECTIONS COMMENTED OUT FOR MAIN FIGMA ---
                     const SizedBox(height: 32),
 
                     // Projects Section Header
@@ -522,6 +523,7 @@ class _HomeScreenState extends State<HomeScreen>
                         ],
                       ),
                     ),
+                    --------------------------------------- */
                   ],
                 ),
               ),

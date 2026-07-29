@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../theme/perfekt_theme.dart';
 import '../../widgets/perfekt/perfekt_button.dart';
+import '../../core/routes/app_routes.dart';
 
 class UbakusAnalysisScreen extends StatelessWidget {
   const UbakusAnalysisScreen({super.key});
@@ -247,11 +248,32 @@ class UbakusAnalysisScreen extends StatelessWidget {
                   icon: Icons.play_arrow_rounded,
                   height: 54,
                   fontSize: 16,
-                  onPressed: () => Get.snackbar(
-                    "Analysis Completed",
-                    "Thermal bridging and condensation metrics verified.",
-                    snackPosition: SnackPosition.TOP,
-                  ),
+                  onPressed: () {
+                    Get.defaultDialog(
+                      title: 'Simulation',
+                      titleStyle: PerfektTheme.fontBold(18, color: PerfektTheme.textDark),
+                      middleText: 'Choose the analysis outcome for testing:',
+                      middleTextStyle: PerfektTheme.fontRegular(14, color: PerfektTheme.textMedium),
+                      textConfirm: 'Success',
+                      textCancel: 'Redo Needed',
+                      confirmTextColor: Colors.white,
+                      buttonColor: PerfektTheme.primaryBlue,
+                      cancelTextColor: PerfektTheme.primaryBlue,
+                      onConfirm: () {
+                        Get.back(); // close dialog
+                        Get.snackbar(
+                          "Analysis Completed",
+                          "Thermal bridging and condensation metrics verified.",
+                          snackPosition: SnackPosition.TOP,
+                          backgroundColor: PerfektTheme.successGreen,
+                          colorText: Colors.white,
+                        );
+                      },
+                      onCancel: () {
+                        Get.toNamed(AppRoutes.redoNeeded, arguments: {'task': 'Kitchen Wall'});
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 30),
               ],

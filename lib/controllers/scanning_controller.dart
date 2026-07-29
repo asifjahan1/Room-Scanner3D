@@ -312,7 +312,12 @@ class ScanningController extends GetxController {
     final calculatedArea = _calculatePolygonArea(alignedWalls);
     final calculatedPerimeter = _calculatePerimeter(alignedWalls);
 
+    final args = Get.arguments as Map<String, dynamic>?;
+    final taskName = args?['task'] as String?;
+    final fromLaser = args?['fromLaser'] as bool? ?? false;
+
     final polishedRoom = rawRoom.copyWith(
+      label: taskName ?? rawRoom.label,
       walls: alignedWalls,
       area: calculatedArea,
       perimeter: calculatedPerimeter,
@@ -323,7 +328,11 @@ class ScanningController extends GetxController {
     isProcessing.value = false;
     isScanning.value = false;
 
-    Get.offNamed(AppRoutes.scanComplete, arguments: polishedRoom);
+    if (fromLaser) {
+      Get.offNamed(AppRoutes.measurementResult, arguments: {'task': taskName, 'roomScan': polishedRoom});
+    } else {
+      Get.offNamed(AppRoutes.scanComplete, arguments: polishedRoom);
+    }
   }
 
   /// Straightens wall segments and joins endpoints so room boundary forms a crisp polygon.

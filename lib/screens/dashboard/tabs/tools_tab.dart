@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../theme/perfekt_theme.dart';
-import '../../../../widgets/perfekt/perfekt_card.dart';
 import '../../../../controllers/dashboard_controller.dart';
 import '../../../../core/routes/app_routes.dart';
 
-/// Tools tab in PerfektWerk OS.
-/// CRITICAL: Preserves and highlights the existing 3D LiDAR Room Scanner tool without modifying core code!
+/// Data model for Measurement Grid Items
+class MeasurementItem {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  MeasurementItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+}
+
+/// Tools tab in PerfektWerk OS (Matching Figma Measurement Scan flow).
+/// Dynamically generated grid for scalability and consistency.
 class ToolsTab extends StatelessWidget {
   const ToolsTab({super.key});
 
@@ -14,286 +26,216 @@ class ToolsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<DashboardController>();
 
+    // Dynamically defined list of measurement tools
+    final List<MeasurementItem> measurementItems = [
+      MeasurementItem(
+        label: "Wall",
+        icon: Icons.align_vertical_center_rounded,
+        onTap: () => controller.launchLiDARScanner("Wall"),
+      ),
+      MeasurementItem(
+        label: "Floor",
+        icon: Icons.layers_outlined,
+        onTap: () => controller.launchLiDARScanner("Floor"),
+      ),
+      MeasurementItem(
+        label: "Ceiling",
+        icon: Icons.vertical_align_top_rounded,
+        onTap: () => controller.launchLiDARScanner("Ceiling"),
+      ),
+      MeasurementItem(
+        label: "Opening",
+        icon: Icons.crop_free_rounded,
+        onTap: () => controller.launchLiDARScanner("Opening"),
+      ),
+      MeasurementItem(
+        label: "Room",
+        icon: Icons.view_in_ar_rounded,
+        onTap: () => controller.launchLiDARScanner("Room"),
+      ),
+      MeasurementItem(
+        label: "Trench",
+        icon: Icons.view_headline_rounded,
+        onTap: () => controller.launchLiDARScanner("Trench"),
+      ),
+      MeasurementItem(
+        label: "Perimeter",
+        icon: Icons.polyline_outlined,
+        onTap: () => controller.launchLiDARScanner("Perimeter"),
+      ),
+    ];
+
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top App Bar Area
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Text(
-                      "Engineering Tools",
-                      style: PerfektTheme.fontBold(
-                        24,
-                        color: PerfektTheme.textDark,
-                      ),
+                    const Icon(
+                      Icons.handyman_rounded,
+                      color: PerfektTheme.primaryBlue,
+                      size: 20,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(width: 8),
                     Text(
-                      "High-precision digital craftsmanship suite",
-                      style: PerfektTheme.fontRegular(
-                        14,
-                        color: PerfektTheme.textMedium,
-                      ),
+                      "PERFEKTWERK OS",
+                      style: PerfektTheme.fontBold(
+                        15,
+                        color: PerfektTheme.primaryBlue,
+                      ).copyWith(letterSpacing: 0.5),
                     ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.handyman_rounded,
-                    color: PerfektTheme.primaryBlue,
-                    size: 24,
+                    color: PerfektTheme.surfaceGrey,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: PerfektTheme.borderLight,
+                      width: 1,
+                    ),
+                    image: const DecorationImage(
+                      image: NetworkImage(
+                        'https://ui-avatars.com/api/?name=User&background=155DFC&color=fff',
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+          ),
 
-            // FLAGSHIP LI-DAR SCANNER TOOL CARD
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: PerfektTheme.radiusCard,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF155DFC), Color(0xFF3884FF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: PerfektTheme.primaryBlue.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(22.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.bolt_rounded,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                "FLAGSHIP CORE FEATURE",
-                                style: PerfektTheme.fontBold(
-                                  10,
-                                  color: Colors.white,
-                                ).copyWith(letterSpacing: 0.8),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(
-                          Icons.view_in_ar_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      "3D LiDAR Room Scanner",
-                      style: PerfektTheme.fontBold(22, color: Colors.white),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Scan rooms and generate CAD floor plans in real-time. Features multi-tiered sensor fusion and 3D architectural reconstruction without modifying existing core scanning code.",
-                      style: PerfektTheme.fontRegular(
-                        14,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ).copyWith(height: 1.5),
-                    ),
-                    const SizedBox(height: 22),
-                    ElevatedButton(
-                      onPressed: () => controller.launchLiDARScanner(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: PerfektTheme.primaryBlue,
-                        minimumSize: const Size(double.infinity, 50),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+
+                  // Request Material Card
+                  GestureDetector(
+                    onTap: () => Get.toNamed(AppRoutes.createMaterialRequest),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: PerfektTheme.cardShadow,
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.camera_alt_rounded, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Launch 3D LiDAR Scanner",
-                            style: PerfektTheme.fontBold(
-                              15,
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: PerfektTheme.primaryBlue.withValues(
+                                alpha: 0.08,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.assignment_turned_in_outlined,
+                              size: 24,
                               color: PerfektTheme.primaryBlue,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.arrow_forward_rounded, size: 18),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              "Request Material",
+                              style: PerfektTheme.fontSemiBold(
+                                16,
+                                color: PerfektTheme.textDark,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: PerfektTheme.textLight,
+                          ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  Text(
+                    "What are you measuring?",
+                    style: PerfektTheme.fontBold(
+                      22,
+                      color: PerfektTheme.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "Select an area to start.",
+                    style: PerfektTheme.fontRegular(
+                      15,
+                      color: PerfektTheme.textMedium,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Dynamic Grid of Measurement Types
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 1.1,
+                        ),
+                    itemCount: measurementItems.length,
+                    itemBuilder: (context, index) {
+                      final item = measurementItems[index];
+                      return _buildGridItem(item);
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            Text(
-              "STRUCTURAL & MATERIAL ANALYSIS",
-              style: PerfektTheme.fontSemiBold(
-                11,
-                color: PerfektTheme.textLight,
-              ).copyWith(letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 12),
-
-            _buildUtilityItem(
-              icon: Icons.layers_outlined,
-              title: "Ubakus Thermal Analysis",
-              subtitle:
-                  "Inspect layer insulation, U-Values, and heat flow curves.",
-              onTap: () => Get.toNamed(AppRoutes.ubakusAnalysis),
-              isHighlight: true,
-            ),
-            const SizedBox(height: 12),
-            _buildUtilityItem(
-              icon: Icons.inventory_2_outlined,
-              title: "Material Requisition Suite",
-              subtitle:
-                  "Manage site material requests, stock counts, and orders.",
-              onTap: () => Get.toNamed(AppRoutes.materialRequests),
-              isHighlight: true,
-            ),
-            const SizedBox(height: 24),
-
-            Text(
-              "AUXILIARY FIELD UTILITIES",
-              style: PerfektTheme.fontSemiBold(
-                11,
-                color: PerfektTheme.textLight,
-              ).copyWith(letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 12),
-
-            _buildUtilityItem(
-              icon: Icons.straighten_rounded,
-              title: "Digital Tilt & Angle Meter",
-              subtitle: "Check inclination and structural alignments.",
-            ),
-            const SizedBox(height: 12),
-            _buildUtilityItem(
-              icon: Icons.calculate_outlined,
-              title: "Site Material Calculator",
-              subtitle: "Compute concrete volume and foundation estimates.",
-            ),
-            const SizedBox(height: 12),
-            _buildUtilityItem(
-              icon: Icons.verified_user_outlined,
-              title: "Safety Compliance Checklist",
-              subtitle: "Verify ISO 27001 & workplace protocols.",
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildUtilityItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    VoidCallback? onTap,
-    bool isHighlight = false,
-  }) {
+  Widget _buildGridItem(MeasurementItem item) {
     return GestureDetector(
-      onTap:
-          onTap ??
-          () => Get.snackbar(
-            title,
-            "Utility calibrated and ready.",
-            snackPosition: SnackPosition.TOP,
-          ),
-      child: PerfektCard(
-        padding: const EdgeInsets.all(16),
-        borderColor: isHighlight
-            ? const Color(0xFFBFDBFE)
-            : PerfektTheme.borderLight,
-        backgroundColor: isHighlight ? const Color(0xFFF8FAFC) : Colors.white,
-        child: Row(
+      onTap: item.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: PerfektTheme.cardShadow,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isHighlight
-                    ? const Color(0xFFEFF6FF)
-                    : PerfektTheme.surfaceGrey,
-                borderRadius: BorderRadius.circular(12),
+            Icon(item.icon, size: 32, color: PerfektTheme.primaryBlue),
+            const SizedBox(height: 12),
+            Text(
+              item.label,
+              style: PerfektTheme.fontSemiBold(
+                15,
+                color: PerfektTheme.textDark,
               ),
-              child: Icon(
-                icon,
-                color: isHighlight
-                    ? PerfektTheme.primaryBlue
-                    : PerfektTheme.textDark,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: PerfektTheme.fontBold(
-                      15,
-                      color: PerfektTheme.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: PerfektTheme.fontRegular(
-                      12,
-                      color: PerfektTheme.textMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: isHighlight
-                  ? PerfektTheme.primaryBlue
-                  : PerfektTheme.textLight,
             ),
           ],
         ),
