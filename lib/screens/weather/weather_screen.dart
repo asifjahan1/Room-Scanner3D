@@ -256,7 +256,7 @@ class WeatherScreen extends StatelessWidget {
                               ),
                               scrollDirection: Axis.horizontal,
                               itemCount: controller.siteAlerts.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(width: 16),
                               itemBuilder: (context, index) {
                                 final alert = controller.siteAlerts[index];
@@ -305,7 +305,7 @@ class WeatherScreen extends StatelessWidget {
                               ),
                               scrollDirection: Axis.horizontal,
                               itemCount: controller.hourlyTimeline.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(width: 12),
                               itemBuilder: (context, index) {
                                 final item = controller.hourlyTimeline[index];

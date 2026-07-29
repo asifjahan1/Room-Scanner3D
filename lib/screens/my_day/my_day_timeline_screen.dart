@@ -6,19 +6,19 @@ import '../../widgets/perfekt/perfekt_card.dart';
 import '../../core/routes/app_routes.dart';
 
 // ─── Figma-specific colors not in PerfektTheme ───────────────────────────────
-const _bgPage      = Color(0xFFF9F9FF);
-const _deepBlue    = Color(0xFF00418F);
-const _textMid     = Color(0xFF424753);
-const _divider     = Color(0xFFE2E8F0);
+const _bgPage = Color(0xFFF9F9FF);
+const _deepBlue = Color(0xFF00418F);
+const _textMid = Color(0xFF424753);
+const _divider = Color(0xFFE2E8F0);
 const _surfaceGrey = Color(0xFFE7E7F1);
 
 // Done card
-const _doneAccent  = Color(0xFF22C55E);
+const _doneAccent = Color(0xFF22C55E);
 const _doneBadgeBg = Color(0xFFDCFCE7);
 const _doneBadgeFg = Color(0xFF166534);
 
 // Live (In-progress) card
-const _liveCardBg  = Color(0x0D00418F); // rgba(0,65,143,0.05)
+const _liveCardBg = Color(0x0D00418F); // rgba(0,65,143,0.05)
 const _liveCardBdr = Color(0x3300418F); // rgba(0,65,143,0.20)
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
@@ -77,8 +77,10 @@ class _Header extends StatelessWidget {
           // Title
           Text(
             'PLANS',
-            style: PerfektTheme.fontBold(24, color: _deepBlue)
-                .copyWith(letterSpacing: 1.2),
+            style: PerfektTheme.fontBold(
+              24,
+              color: _deepBlue,
+            ).copyWith(letterSpacing: 1.2),
           ),
           // Avatar
           SizedBox(
@@ -90,18 +92,15 @@ class _Header extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: const Color(0xFFE1E2EB),
-                  border: Border.all(
-                      color: PerfektTheme.primaryBlue, width: 2),
+                  border: Border.all(color: PerfektTheme.primaryBlue, width: 2),
                   shape: BoxShape.circle,
                 ),
                 child: ClipOval(
                   child: Image.network(
                     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                        Icons.person,
-                        size: 20,
-                        color: _deepBlue),
+                    errorBuilder: (_, _, _) =>
+                        const Icon(Icons.person, size: 20, color: _deepBlue),
                   ),
                 ),
               ),
@@ -289,8 +288,7 @@ class _TimelineCard extends StatelessWidget {
   }
 
   Widget _cardBody() {
-    final timeColor =
-        status == _TaskStatus.live ? _deepBlue : _textMid;
+    final timeColor = status == _TaskStatus.live ? _deepBlue : _textMid;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,17 +299,20 @@ class _TimelineCard extends StatelessWidget {
           children: [
             Text(
               time,
-              style: PerfektTheme.fontBold(14, color: timeColor)
-                  .copyWith(letterSpacing: 0.7),
+              style: PerfektTheme.fontBold(
+                14,
+                color: timeColor,
+              ).copyWith(letterSpacing: 0.7),
             ),
             if (status != _TaskStatus.none) _buildBadge(),
           ],
         ),
         const SizedBox(height: 4),
         // Title
-        Text(title,
-            style: PerfektTheme.fontSemiBold(20,
-                color: PerfektTheme.textDark)),
+        Text(
+          title,
+          style: PerfektTheme.fontSemiBold(20, color: PerfektTheme.textDark),
+        ),
         const SizedBox(height: 4),
         // Subtitle + optional map button
         Row(
@@ -320,12 +321,19 @@ class _TimelineCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.location_on_outlined,
-                    size: 9.33, color: PerfektTheme.textMedium),
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 9.33,
+                  color: PerfektTheme.textMedium,
+                ),
                 const SizedBox(width: 4),
-                Text(subtitle,
-                    style: PerfektTheme.fontRegular(14,
-                        color: PerfektTheme.textMedium)),
+                Text(
+                  subtitle,
+                  style: PerfektTheme.fontRegular(
+                    14,
+                    color: PerfektTheme.textMedium,
+                  ),
+                ),
               ],
             ),
             if (showMapButton) _buildMapButton(),
@@ -346,8 +354,10 @@ class _TimelineCard extends StatelessWidget {
           ),
           child: Text(
             'DONE',
-            style: PerfektTheme.fontBold(12, color: _doneBadgeFg)
-                .copyWith(letterSpacing: 0.6),
+            style: PerfektTheme.fontBold(
+              12,
+              color: _doneBadgeFg,
+            ).copyWith(letterSpacing: 0.6),
           ),
         );
       case _TaskStatus.live:
@@ -359,8 +369,10 @@ class _TimelineCard extends StatelessWidget {
           ),
           child: Text(
             'LIVE',
-            style: PerfektTheme.fontBold(12, color: Colors.white)
-                .copyWith(letterSpacing: 0.6),
+            style: PerfektTheme.fontBold(
+              12,
+              color: Colors.white,
+            ).copyWith(letterSpacing: 0.6),
           ),
         );
       case _TaskStatus.upcoming:
@@ -372,8 +384,10 @@ class _TimelineCard extends StatelessWidget {
           ),
           child: Text(
             'UPCOMING',
-            style: PerfektTheme.fontBold(12, color: _textMid)
-                .copyWith(letterSpacing: 0.6),
+            style: PerfektTheme.fontBold(
+              12,
+              color: _textMid,
+            ).copyWith(letterSpacing: 0.6),
           ),
         );
       default:
@@ -391,8 +405,11 @@ class _TimelineCard extends StatelessWidget {
           border: Border.all(color: PerfektTheme.borderLight),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(Icons.map_outlined, size: 18,
-            color: PerfektTheme.textMedium),
+        child: Icon(
+          Icons.map_outlined,
+          size: 18,
+          color: PerfektTheme.textMedium,
+        ),
       );
     }
     return Container(
@@ -428,8 +445,11 @@ class _DoneNode extends StatelessWidget {
               boxShadow: PerfektTheme.cardShadow,
             ),
           ),
-          Icon(Icons.check_circle_rounded,
-              color: PerfektTheme.successGreen, size: 21.7),
+          Icon(
+            Icons.check_circle_rounded,
+            color: PerfektTheme.successGreen,
+            size: 21.7,
+          ),
         ],
       ),
     );
@@ -454,8 +474,11 @@ class _LiveNode extends StatelessWidget {
               boxShadow: PerfektTheme.buttonShadow,
             ),
           ),
-          const Icon(Icons.engineering_rounded,
-              color: Colors.white, size: 21.9),
+          const Icon(
+            Icons.engineering_rounded,
+            color: Colors.white,
+            size: 21.9,
+          ),
         ],
       ),
     );
