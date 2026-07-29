@@ -1,3 +1,4 @@
+import 'dart:async'; // Timer ব্যবহার করার জন্য এটি ইমপোর্ট করতে হবে
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../core/routes/app_routes.dart';
@@ -14,13 +15,41 @@ class AuthController extends GetxController {
   final rememberMe = true.obs;
   final isLoading = false.obs;
 
+  // Timer Variables
+  final secondsRemaining = 60.obs;
+  final canResend = false.obs;
+  Timer? _timer;
+
+  @override
+  void onInit() {
+    super.onInit();
+    startTimer(); // কন্ট্রোলার ইনিশিয়ালাইজ হওয়ার সাথে সাথেই টাইমার শুরু হবে
+  }
+
   @override
   void onClose() {
+    _timer?.cancel(); // মেমোরি লিক রোধ করতে টাইমার ক্যানসেল করা
     emailController.dispose();
     passwordController.dispose();
     fullNameController.dispose();
     phoneController.dispose();
     super.onClose();
+  }
+
+  // Timer ফাংশন
+  void startTimer() {
+    canResend.value = false;
+    secondsRemaining.value = 60;
+    _timer?.cancel();
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (secondsRemaining.value > 0) {
+        secondsRemaining.value--;
+      } else {
+        canResend.value = true;
+        timer.cancel();
+      }
+    });
   }
 
   /// Toggle remember me checkbox
@@ -107,6 +136,8 @@ class AuthController extends GetxController {
 
   /// Resend code action for verification screen
   void resendCode() {
+    if (!canResend.value) return; // যদি ০ না হয়, তাহলে কাজ করবে না
+
     Get.snackbar(
       'Code Resent',
       'A new 6-digit verification code has been dispatched to your email.',
@@ -114,6 +145,8 @@ class AuthController extends GetxController {
       backgroundColor: const Color(0xFF155DFC),
       colorText: const Color(0xFFFFFFFF),
     );
+
+    startTimer(); // রিসেন্ড করার পর আবার ৬০ সেকেন্ড থেকে শুরু হবে
   }
 
   /// Change email action

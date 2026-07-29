@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../theme/perfekt_theme.dart';
 import '../../widgets/perfekt/perfekt_logo.dart';
 import '../../widgets/perfekt/perfekt_button.dart';
-import '../../widgets/perfekt/perfekt_card.dart';
 import '../../controllers/auth_controller.dart';
 
 class SignUpScreen extends StatelessWidget {
@@ -13,115 +11,149 @@ class SignUpScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
 
-    return Theme(
-      data: ThemeData.light().copyWith(
-        scaffoldBackgroundColor: PerfektTheme.backgroundLight,
-      ),
-      child: Scaffold(
-        body: SafeArea(
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        // Match the background gradient from the design
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [Color(0xFFFAF8FF), Color(0xFFFFFFFF)],
+          ),
+        ),
+        child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-                const PerfektLogo(
-                  subtitle: 'INDUSTRIAL INFRASTRUCTURE SYSTEMS',
-                  iconSize: 48,
-                ),
-                const SizedBox(height: 24),
-                PerfektCard(
-                  padding: const EdgeInsets.all(22),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFieldTitle('FULL NAME'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: auth.fullNameController,
-                        style: PerfektTheme.fontMedium(15, color: PerfektTheme.textDark),
-                        decoration: _inputDecoration(
+            padding: const EdgeInsets.fromLTRB(16.0, 48.0, 16.0, 32.0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 448),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Brand Identity Header
+                    const PerfektLogo(
+                      subtitle: 'INDUSTRIAL INFRASTRUCTURE SYSTEMS',
+                      iconSize: 64, // Updated to match Figma 64x64 container
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Form Section (Card removed, placed directly on background)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFieldTitle('FULL NAME'),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: auth.fullNameController,
                           hint: 'Hans Schmidt',
                           prefixIcon: Icons.person_outline_rounded,
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      _buildFieldTitle('EMAIL ADDRESS'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: auth.emailController,
-                        style: PerfektTheme.fontMedium(15, color: PerfektTheme.textDark),
-                        decoration: _inputDecoration(
+                        const SizedBox(height: 20),
+
+                        _buildFieldTitle('EMAIL ADDRESS'),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: auth.emailController,
                           hint: 'name@company.com',
                           prefixIcon: Icons.mail_outline_rounded,
+                          keyboardType: TextInputType.emailAddress,
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      _buildFieldTitle('PHONE NUMBER'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: auth.phoneController,
-                        style: PerfektTheme.fontMedium(15, color: PerfektTheme.textDark),
-                        decoration: _inputDecoration(
-                          hint: '+49 000 0000000',
-                          prefixIcon: Icons.phone_outlined,
+                        const SizedBox(height: 20),
+
+                        _buildFieldTitle('PHONE NUMBER'),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: auth.phoneController,
+                          hint: '+49 000 000000',
+                          // Using a mobile icon to better match the design's phone vector
+                          prefixIcon: Icons.phone_android_outlined,
+                          keyboardType: TextInputType.phone,
                         ),
-                      ),
-                      const SizedBox(height: 22),
-                      Text(
-                        "By signing up, you agree to our Terms of Service and Privacy Policy.",
-                        style: PerfektTheme.fontRegular(12, color: PerfektTheme.textLight).copyWith(
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      // Sign Up Button (ABSOLUTELY ZERO VALIDATION)
-                      Obx(() => PerfektButton(
-                        label: auth.isLoading.value ? "Signing Up..." : "Sign Up",
-                        trailingIcon: Icons.arrow_forward_rounded,
-                        height: 50,
-                        onPressed: () => auth.signUp(),
-                      )),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Already have an account? ",
-                              style: PerfektTheme.fontRegular(13, color: PerfektTheme.textMedium),
-                            ),
-                            InkWell(
-                              onTap: () => auth.goToSignIn(),
-                              child: Text(
-                                "Sign In",
-                                style: PerfektTheme.fontSemiBold(13, color: PerfektTheme.primaryBlue),
+                        const SizedBox(height: 20),
+
+                        // Terms & Privacy (Microcopy)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0,
+                            vertical: 0.0,
+                          ),
+                          child: RichText(
+                            text: const TextSpan(
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                                height: 1.25,
+                                color: Color(
+                                  0xCC424753,
+                                ), // rgba(66, 71, 83, 0.8)
                               ),
+                              children: [
+                                TextSpan(
+                                  text: 'By signing up, you agree to our ',
+                                ),
+                                TextSpan(
+                                  text: 'Terms of Service',
+                                  style: TextStyle(color: Color(0xFF0058BC)),
+                                ),
+                                TextSpan(text: ' and\n'),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: TextStyle(color: Color(0xFF0058BC)),
+                                ),
+                                TextSpan(text: '.'),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Already have an account? ",
-                      style: PerfektTheme.fontRegular(14, color: PerfektTheme.textMedium),
+                        const SizedBox(height: 16),
+
+                        // Primary Action Button
+                        Obx(
+                          () => PerfektButton(
+                            label: auth.isLoading.value
+                                ? "Signing Up..."
+                                : "Sign Up",
+                            trailingIcon: Icons.arrow_forward_rounded,
+                            height: 64, // Updated button height to 64px
+                            onPressed: () => auth.signUp(),
+                          ),
+                        ),
+                      ],
                     ),
-                    InkWell(
-                      onTap: () => auth.goToSignIn(),
-                      child: Text(
-                        "Sign In",
-                        style: PerfektTheme.fontSemiBold(14, color: PerfektTheme.primaryBlue),
-                      ),
+                    const SizedBox(height: 48), // Footer Margin
+                    // Secondary Action Footer
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Already have an account? ",
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 18,
+                            color: Color(0xFF424753),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => auth.goToSignIn(),
+                          child: const Text(
+                            "Sign In",
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              color: Color(0xFF00418F),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
           ),
         ),
@@ -129,34 +161,72 @@ class SignUpScreen extends StatelessWidget {
     );
   }
 
+  // Helper widget to match Figma Label typography
   Widget _buildFieldTitle(String title) {
     return Text(
       title,
-      style: PerfektTheme.fontSemiBold(11, color: PerfektTheme.textMedium).copyWith(
-        letterSpacing: 0.8,
+      style: const TextStyle(
+        fontFamily: 'Plus Jakarta Sans',
+        fontWeight: FontWeight.w700,
+        fontSize: 14,
+        letterSpacing: 0.7,
+        color: Color(0xFF424753),
       ),
     );
   }
 
-  InputDecoration _inputDecoration({required String hint, required IconData prefixIcon}) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: PerfektTheme.fontRegular(14, color: PerfektTheme.textLight),
-      filled: true,
-      fillColor: PerfektTheme.inputBackground,
-      prefixIcon: Icon(prefixIcon, color: PerfektTheme.textLight, size: 20),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: PerfektTheme.radiusInput,
-        borderSide: const BorderSide(color: PerfektTheme.borderLight),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: PerfektTheme.radiusInput,
-        borderSide: const BorderSide(color: PerfektTheme.borderLight),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: PerfektTheme.radiusInput,
-        borderSide: const BorderSide(color: PerfektTheme.borderFocus, width: 1.5),
+  // Helper widget to match Figma Input typography and geometry
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData prefixIcon,
+    TextInputType? keyboardType,
+  }) {
+    return SizedBox(
+      height: 64, // Matched height of 64px from design
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: const TextStyle(
+          fontFamily: 'Plus Jakarta Sans',
+          fontWeight: FontWeight.w600,
+          fontSize: 20,
+          color: Color(0xFF191B23), // Darker text for actual input
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: Color(0xFFC2C6D5),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 20.0, right: 12.0),
+            child: Icon(prefixIcon, color: const Color(0xFF727784), size: 22),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 52),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 18.5,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(
+              color: Color(0x4DC2C6D5),
+            ), // rgba(194, 198, 213, 0.3)
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0x4DC2C6D5)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFF0058BC), width: 1.5),
+          ),
+        ),
       ),
     );
   }

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../theme/perfekt_theme.dart';
-import '../../widgets/perfekt/perfekt_card.dart';
 import '../../controllers/weather_controller.dart';
 
 class WeatherScreen extends StatelessWidget {
@@ -11,459 +9,518 @@ class WeatherScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(WeatherController());
 
-    return Theme(
-      data: ThemeData.light().copyWith(
-        scaffoldBackgroundColor: PerfektTheme.backgroundLight,
-      ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: PerfektTheme.textDark,
-              size: 20,
-            ),
-            onPressed: () => Get.back(),
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [Color(0xFFF9F9FF), Color(0xFFFFFFFF)],
           ),
-          title: Text(
-            'Site Weather Summary',
-            style: PerfektTheme.fontBold(18, color: PerfektTheme.textDark),
-          ),
-          centerTitle: true,
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 12.0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Project Location Header
-                Text(
-                  'CURRENT PROJECT LOCATION',
-                  style: PerfektTheme.fontSemiBold(
-                    11,
-                    color: PerfektTheme.textLight,
-                  ).copyWith(letterSpacing: 1.2),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      color: PerfektTheme.primaryBlue,
-                      size: 22,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 1. Custom Top Navigation Bar
+              Container(
+                height: 64,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9F9FF),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x0D000000), // 5% opacity black
+                      offset: Offset(0, 1),
+                      blurRadius: 2,
                     ),
-                    const SizedBox(width: 6),
-                    Obx(
-                      () => Text(
-                        controller.projectLocation.value,
-                        style: PerfektTheme.fontBold(
-                          22,
-                          color: PerfektTheme.textDark,
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Color(0xFF00418F),
+                      ),
+                      onPressed: () => Get.back(),
+                    ),
+                    const Text(
+                      'PERFEKTWERK OS',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 24,
+                        letterSpacing: 1.2,
+                        color: Color(0xFF00418F),
+                      ),
+                    ),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE1E2EB),
+                        border: Border.all(
+                          color: const Color(0xFF0058BC),
+                          width: 2,
                         ),
+                        shape: BoxShape.circle,
+                      ),
+                      // Fallback icon since the avatar asset might not be present locally
+                      child: const Icon(
+                        Icons.person,
+                        color: Color(0xFF00418F),
+                        size: 24,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+              ),
 
-                // Main Weather Display Card
-                PerfektCard(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Obx(
-                                () => Text(
-                                  controller.currentTemp.value,
-                                  style: PerfektTheme.fontBold(
-                                    56,
-                                    color: PerfektTheme.textDark,
-                                  ).copyWith(height: 1.0),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Obx(
-                                () => Text(
-                                  controller.currentCondition.value,
-                                  style: PerfektTheme.fontSemiBold(
-                                    18,
-                                    color: PerfektTheme.textMedium,
-                                  ),
-                                ),
-                              ),
-                            ],
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 24.0, bottom: 32.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // 2. Center Location Header
+                        const Text(
+                          'CURRENT PROJECT LOCATION',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            letterSpacing: 0.7,
+                            color: Color(0xFF424753),
                           ),
-                          Container(
-                            width: 84,
-                            height: 84,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons
+                                  .location_on_outlined, // Closer to Figma outline pin
+                              color: Color(0xFF00418F),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 4),
+                            Obx(
+                              () => Text(
+                                controller.projectLocation.value,
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 24,
+                                  color: Color(0xFF191B22),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // 3. Weather Hero Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(32),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: const Icon(
-                              Icons.cloud_queue_rounded,
-                              size: 46,
-                              color: PerfektTheme.primaryBlue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      const Divider(color: PerfektTheme.borderLight),
-                      const SizedBox(height: 16),
-                      // Wind & Humidity Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: PerfektTheme.surfaceGrey,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.air_rounded,
-                                    size: 20,
-                                    color: PerfektTheme.textMedium,
-                                  ),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(32),
+                              border: Border.all(
+                                color: const Color(0x0D000000),
+                              ), // rgba(0,0,0,0.05)
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x05000000),
+                                  offset: Offset(0, 1),
+                                  blurRadius: 1,
                                 ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Wind Speed',
-                                      style: PerfektTheme.fontMedium(
-                                        12,
-                                        color: PerfektTheme.textLight,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Obx(
-                                      () => Text(
-                                        controller.windSpeed.value,
-                                        style: PerfektTheme.fontBold(
-                                          15,
-                                          color: PerfektTheme.textDark,
+                                BoxShadow(
+                                  color: Color(0x0A000000),
+                                  offset: Offset(0, 8),
+                                  blurRadius: 20,
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                // Cloud Graphics (Layered to match image)
+                                SizedBox(
+                                  width: 140,
+                                  height: 80,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Positioned(
+                                        right: 0,
+                                        top: 0,
+                                        child: Icon(
+                                          Icons.cloud_outlined,
+                                          size: 85,
+                                          color: const Color(
+                                            0xFFE1E2EB,
+                                          ).withValues(alpha: 0.7),
                                         ),
                                       ),
+                                      const Positioned(
+                                        left: 0,
+                                        bottom: 10,
+                                        child: Icon(
+                                          Icons.cloud_rounded,
+                                          size: 80,
+                                          color: Color(0xFF00418F),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Obx(
+                                  () => Text(
+                                    controller.currentTemp.value,
+                                    style: const TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 80,
+                                      height: 1.0,
+                                      letterSpacing: -4,
+                                      color: Color(0xFF00418F),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Obx(
+                                  () => Text(
+                                    controller.currentCondition.value,
+                                    style: const TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 20,
+                                      color: Color(0xFF191B22),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Wind & Humidity Bento Boxes
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    _buildHeroStatBox(
+                                      "WIND SPEED",
+                                      controller.windSpeed.value,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    _buildHeroStatBox(
+                                      "HUMIDITY",
+                                      controller.humidityLevel.value,
                                     ),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: PerfektTheme.surfaceGrey,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.water_drop_outlined,
-                                    size: 20,
-                                    color: PerfektTheme.textMedium,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Humidity',
-                                      style: PerfektTheme.fontMedium(
-                                        12,
-                                        color: PerfektTheme.textLight,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Obx(
-                                      () => Text(
-                                        controller.humidityLevel.value,
-                                        style: PerfektTheme.fontBold(
-                                          15,
-                                          color: PerfektTheme.textDark,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // Active Site Alerts
-                Text(
-                  'Active Site Alerts',
-                  style: PerfektTheme.fontBold(
-                    18,
-                    color: PerfektTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Critical Alert Card
-                PerfektCard(
-                  padding: const EdgeInsets.all(18),
-                  borderColor: const Color(0xFFFECACA),
-                  backgroundColor: PerfektTheme.alertCriticalBg,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          Icons.warning_amber_rounded,
-                          color: PerfektTheme.alertCritical,
-                          size: 26,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: PerfektTheme.alertCritical,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'CRITICAL',
-                                    style: PerfektTheme.fontBold(
-                                      10,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'High Wind Warning',
-                                  style: PerfektTheme.fontBold(
-                                    15,
-                                    color: PerfektTheme.textDark,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Gusts > 45km/h — Secure overhead crane & scaffolding.',
-                              style: PerfektTheme.fontRegular(
-                                13,
-                                color: PerfektTheme.textMedium,
+                        const SizedBox(height: 32),
+
+                        // 4. Active Site Alerts Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: const Text(
+                              'ACTIVE SITE ALERTS',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                letterSpacing: 0.7,
+                                color: Color(0xFF424753),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Schedule Alert Card
-                PerfektCard(
-                  padding: const EdgeInsets.all(18),
-                  borderColor: const Color(0xFFFED7AA),
-                  backgroundColor: PerfektTheme.alertScheduleBg,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFEDD5),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.access_time_rounded,
-                          color: PerfektTheme.alertSchedule,
-                          size: 26,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: PerfektTheme.alertSchedule,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'SCHEDULE',
-                                    style: PerfektTheme.fontBold(
-                                      10,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Pour Delayed',
-                                  style: PerfektTheme.fontBold(
-                                    15,
-                                    color: PerfektTheme.textDark,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '@ < 3°C limit — Concrete thermal curing thresholds active.',
-                              style: PerfektTheme.fontRegular(
-                                13,
-                                color: PerfektTheme.textMedium,
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 129,
+                          child: Obx(
+                            () => ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
                               ),
+                              scrollDirection: Axis.horizontal,
+                              itemCount: controller.siteAlerts.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 16),
+                              itemBuilder: (context, index) {
+                                final alert = controller.siteAlerts[index];
+                                return _buildAlertCard(alert);
+                              },
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
+                        const SizedBox(height: 32),
 
-                // Hourly Timeline
-                Text(
-                  'Hourly Timeline',
-                  style: PerfektTheme.fontBold(
-                    18,
-                    color: PerfektTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                Obx(
-                  () => Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: controller.hourlyTimeline.map((item) {
-                      final isNow = item.time == 'NOW';
-                      return Expanded(
-                        child: Container(
-                          margin: EdgeInsets.only(
-                            right: item == controller.hourlyTimeline.last
-                                ? 0
-                                : 10,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isNow
-                                ? PerfektTheme.primaryBlue
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isNow
-                                  ? PerfektTheme.primaryBlue
-                                  : PerfektTheme.borderLight,
-                            ),
-                            boxShadow: PerfektTheme.cardShadow,
-                          ),
-                          child: Column(
-                            children: [
+                        // 5. Hourly Timeline Section
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
                               Text(
-                                item.time,
-                                style: isNow
-                                    ? PerfektTheme.fontBold(
-                                        12,
-                                        color: Colors.white,
-                                      )
-                                    : PerfektTheme.fontMedium(
-                                        12,
-                                        color: PerfektTheme.textMedium,
-                                      ),
+                                'HOURLY TIMELINE',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  letterSpacing: 0.7,
+                                  color: Color(0xFF424753),
+                                ),
                               ),
-                              const SizedBox(height: 10),
-                              Icon(
-                                item.iconType == 'rain'
-                                    ? Icons.grain_rounded
-                                    : Icons.cloud_outlined,
-                                color: isNow
-                                    ? Colors.white
-                                    : PerfektTheme.primaryBlue,
-                                size: 24,
-                              ),
-                              const SizedBox(height: 10),
                               Text(
-                                item.temperature,
-                                style: isNow
-                                    ? PerfektTheme.fontBold(
-                                        18,
-                                        color: Colors.white,
-                                      )
-                                    : PerfektTheme.fontBold(
-                                        18,
-                                        color: PerfektTheme.textDark,
-                                      ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item.humidity,
-                                style: isNow
-                                    ? PerfektTheme.fontRegular(
-                                        11,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                      )
-                                    : PerfektTheme.fontRegular(
-                                        11,
-                                        color: PerfektTheme.textLight,
-                                      ),
+                                'NEXT 6 HOURS',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF00418F),
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      );
-                    }).toList(),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 162,
+                          child: Obx(
+                            () => ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              scrollDirection: Axis.horizontal,
+                              itemCount: controller.hourlyTimeline.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 12),
+                              itemBuilder: (context, index) {
+                                final item = controller.hourlyTimeline[index];
+                                return _buildHourlyCard(item);
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 32),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Helper Widget for the Wind/Humidity boxes
+  Widget _buildHeroStatBox(String label, String value) {
+    return Expanded(
+      child: Container(
+        height: 65,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF2F3FC),
+          border: Border.all(
+            color: const Color(0x4DC2C6D5),
+          ), // rgba(194, 198, 213, 0.3)
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w400,
+                fontSize: 10,
+                color: Color(0xFF424753),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: Color(0xFF00418F),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper Widget for the Site Alerts
+  Widget _buildAlertCard(SiteAlert alert) {
+    final isCritical = alert.type == 'CRITICAL';
+    final typeColor = isCritical
+        ? const Color(0xFFBA1A1A)
+        : const Color(0xFF5C5F61);
+
+    return Container(
+      width: 167,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x0D000000)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x05000000),
+            offset: Offset(0, 1),
+            blurRadius: 1,
+          ),
+          BoxShadow(
+            color: Color(0x0A000000),
+            offset: Offset(0, 8),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: typeColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                alert.type,
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12,
+                  color: typeColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Text(
+              alert.title,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w400,
+                fontSize: 16,
+                height: 1.25,
+                color: Color(0xFF191B22),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Icon(alert.icon, size: 14, color: const Color(0xFF424753)),
+              const SizedBox(width: 6),
+              Text(
+                alert.detail,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w400,
+                  fontSize: 14,
+                  color: Color(0xFF424753),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper Widget for the Hourly Forecast
+  Widget _buildHourlyCard(HourlyForecast item) {
+    return Container(
+      width: 84,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+      decoration: BoxDecoration(
+        color: item.isRainy ? const Color(0x0D0058BC) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: item.isRainy
+              ? const Color(0x3300418F)
+              : const Color(0x0D000000),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x05000000),
+            offset: Offset(0, 1),
+            blurRadius: 1,
+          ),
+          BoxShadow(
+            color: Color(0x0A000000),
+            offset: Offset(0, 8),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            item.time,
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w400,
+              fontSize: 12,
+              color: Color(0xFF424753),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Icon(
+            item.icon,
+            color: item.isRainy
+                ? const Color(0xFF00418F)
+                : const Color(0xFF424753),
+            size: 26,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            item.temperature,
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              color: item.isRainy
+                  ? const Color(0xFF00418F)
+                  : const Color(0xFF191B22),
+            ),
+          ),
+          if (item.humidity.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              item.humidity,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                color: Color(0xB300418F), // rgba(0, 65, 143, 0.7)
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
