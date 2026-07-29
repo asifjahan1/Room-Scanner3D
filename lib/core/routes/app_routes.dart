@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:liddar/new_lead/views/lead_details_screen.dart';
 import '../../models/room_scan.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/scanning_screen.dart';
@@ -78,7 +79,7 @@ class AppRoutes {
   static const String myCalendar = '/my-calendar';
   static const String mySchedule = '/my-schedule';
   static const String notifications = '/notifications';
-  
+
   // Section 11 Profile & Settings Routes
   static const String profileAndSettings = '/profile-and-settings';
   static const String appPreferences = '/app-preferences';
@@ -90,6 +91,7 @@ class AppRoutes {
   static const String impressum = '/impressum';
   static const String devicePermissions = '/device-permissions';
   static const String dataExport = '/data-export';
+  static const String leadDetails = '/lead-details';
 
   static List<GetPage> get pages => [
     GetPage(name: home, page: () => const HomeScreen()),
@@ -144,15 +146,25 @@ class AppRoutes {
     GetPage(name: myCalendar, page: () => const MyCalendarScreen()),
     GetPage(name: mySchedule, page: () => const MyScheduleScreen()),
     GetPage(name: notifications, page: () => const NotificationsScreen()),
-    GetPage(name: profileAndSettings, page: () => const ProfileAndSettingsScreen()),
+    GetPage(
+      name: profileAndSettings,
+      page: () => const ProfileAndSettingsScreen(),
+    ),
     GetPage(name: appPreferences, page: () => const AppPreferencesScreen()),
-    GetPage(name: notificationPreferences, page: () => const NotificationPreferencesScreen()),
+    GetPage(
+      name: notificationPreferences,
+      page: () => const NotificationPreferencesScreen(),
+    ),
     GetPage(name: securitySettings, page: () => const SecuritySettingsScreen()),
     GetPage(name: languageSettings, page: () => const LanguageSettingsScreen()),
     GetPage(name: termsOfUse, page: () => const TermsOfUseScreen()),
     GetPage(name: privacyPolicy, page: () => const PrivacyPolicyScreen()),
     GetPage(name: impressum, page: () => const ImpressumScreen()),
-    GetPage(name: devicePermissions, page: () => const DevicePermissionsScreen()),
+    GetPage(
+      name: devicePermissions,
+      page: () => const DevicePermissionsScreen(),
+    ),
     GetPage(name: dataExport, page: () => const DataExportScreen()),
+    GetPage(name: leadDetails, page: () => LeadDetailsScreen()),
   ];
 }

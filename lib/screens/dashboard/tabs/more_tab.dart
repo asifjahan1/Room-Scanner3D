@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../theme/perfekt_theme.dart';
-import '../../../../widgets/perfekt/perfekt_card.dart';
 import '../../../../core/routes/app_routes.dart';
 
 class MoreTab extends StatelessWidget {
@@ -9,36 +7,99 @@ class MoreTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9F9FF),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
-            // Title Header
-            Text(
-              "More",
-              style: PerfektTheme.fontBold(24, color: PerfektTheme.primaryBlue),
-            ),
-            const SizedBox(height: 18),
-
-            // Profile Header Card (Markus Steiner)
-            PerfektCard(
-              padding: const EdgeInsets.all(20),
+            // Header - Top App Bar
+            Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF9F9FF),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x0A000000), // rgba(0,0,0,0.04)
+                    offset: Offset(0, 8),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Stack(
+                  Row(
                     children: [
+                      const Icon(
+                        Icons.handyman, // Tools icon
+                        color: Color(0xFF00418F),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        "More",
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                          letterSpacing: -0.6,
+                          color: Color(0xFF00418F),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      // Synced Badge
                       Container(
-                        width: 60,
-                        height: 60,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF2F3FC),
+                          borderRadius: BorderRadius.circular(9999),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.sync_rounded,
+                              color: Color(0xFF16A34A),
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "SYNCED",
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                letterSpacing: 1.2,
+                                color: Color(0xFF5C5F61),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Profile Avatar
+                      Container(
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: PerfektTheme.primaryBlue,
+                            color: const Color(0x330058BC),
                             width: 2,
-                          ),
+                          ), // rgba(0, 88, 188, 0.2)
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x0D000000),
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
                           image: const DecorationImage(
                             image: NetworkImage(
                               'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
@@ -47,273 +108,269 @@ class MoreTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Markus Steiner",
-                          style: PerfektTheme.fontBold(
-                            18,
-                            color: PerfektTheme.textDark,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Senior Field Engineer @ Team Photo A",
-                          style: PerfektTheme.fontRegular(
-                            13,
-                            color: PerfektTheme.textMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: PerfektTheme.textLight,
-                    size: 24,
-                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
 
-            // Menu Items Card Container
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: PerfektTheme.radiusCard,
-                border: Border.all(color: PerfektTheme.borderLight),
-                boxShadow: PerfektTheme.cardShadow,
-              ),
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    icon: Icons.person_add_alt_1_outlined,
-                    title: "New Lead",
-                    subtitle: "Capture lead details & voice requirements",
-                    onTap: () => Get.snackbar(
-                      "New Lead",
-                      "Capture lead details with audio dictation active.",
-                      snackPosition: SnackPosition.TOP,
+            // Main Content Canvas
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Profile Overview Section
+                    const Text(
+                      "Logged in as",
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        letterSpacing: 0.7,
+                        color: Color(0xFF5C5F61),
+                      ),
                     ),
-                  ),
-                  _buildDivider(),
-
-                  _buildMenuItem(
-                    icon: Icons.calendar_today_outlined,
-                    title: "My Schedule",
-                    subtitle: "Weekly assignments & Skyline Phase 2 shift",
-                    onTap: () => Get.toNamed(AppRoutes.mySchedule),
-                  ),
-                  _buildDivider(),
-
-                  // Highlighted Calendar Item
-                  _buildMenuItem(
-                    icon: Icons.calendar_month_rounded,
-                    title: "Calendar",
-                    subtitle: "Dynamic date scheduling & event logic",
-                    iconColor: PerfektTheme.primaryBlue,
-                    isHighlighted: true,
-                    onTap: () => Get.toNamed(AppRoutes.myCalendar),
-                  ),
-                  _buildDivider(),
-
-                  _buildMenuItem(
-                    icon: Icons.history_rounded,
-                    title: "Attendance History",
-                    subtitle: "42 hours worked • Verified timesheet",
-                    onTap: () => Get.snackbar(
-                      "Attendance History",
-                      "Summary: 42h worked of 168h monthly target.",
-                      snackPosition: SnackPosition.TOP,
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Markus Steiner",
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 24,
+                        color: Color(0xFF191B22),
+                      ),
                     ),
-                  ),
-                  _buildDivider(),
-
-                  _buildMenuItem(
-                    icon: Icons.event_available_rounded,
-                    title: "Availability",
-                    subtitle: "Set weekly status (Available / Half / Off)",
-                    onTap: () => Get.snackbar(
-                      "Availability",
-                      "Status set to 'Available' for October 21-25.",
-                      snackPosition: SnackPosition.TOP,
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Senior Site Engineer • Team Werk-4",
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: Color(0xFF5C5F61),
+                      ),
                     ),
-                  ),
-                  _buildDivider(),
+                    const SizedBox(height: 32),
 
-                  _buildMenuItem(
-                    icon: Icons.beach_access_rounded,
-                    title: "Leave Requests",
-                    subtitle:
-                        "Current balance: 12 Days • Vacation & Sick leave",
-                    onTap: () => Get.snackbar(
-                      "Leave Requests",
-                      "Current leave balance: 12 Days available.",
-                      snackPosition: SnackPosition.TOP,
+                    // Navigation Tiles
+                    _buildNavTile(
+                      title: "New Lead",
+                      icon: Icons.person_add_alt_1_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.leadDetails),
                     ),
-                  ),
-                  _buildDivider(),
+                    const SizedBox(height: 16),
 
-                  _buildMenuItem(
-                    icon: Icons.person_outline_rounded,
-                    title: "Profile & Settings",
-                    subtitle: "Personal profile, security & app configurations",
-                    onTap: () => Get.toNamed(AppRoutes.profileAndSettings),
-                  ),
-                  _buildDivider(),
-
-                  _buildMenuItem(
-                    icon: Icons.bluetooth_connected_rounded,
-                    title: "Device Connectivity",
-                    subtitle: "Leica D1 & Laser Measure Pro connected",
-                    onTap: () => Get.snackbar(
-                      "Device Connectivity",
-                      "Laser Measure Pro connected via Bluetooth.",
-                      snackPosition: SnackPosition.TOP,
+                    _buildNavTile(
+                      title: "My Schedule",
+                      icon: Icons.calendar_today_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.mySchedule),
                     ),
-                  ),
-                  _buildDivider(),
+                    const SizedBox(height: 16),
 
-                  _buildMenuItem(
-                    icon: Icons.cloud_sync_outlined,
-                    title: "Offline Sync",
-                    subtitle: "Device synced (2.4 GB) • Vault-Shield protocol",
-                    onTap: () => Get.toNamed(AppRoutes.syncComplete),
-                  ),
-                  _buildDivider(),
-
-                  _buildMenuItem(
-                    icon: Icons.support_agent_rounded,
-                    title: "Help & Support",
-                    subtitle: "Submit support ticket & live engineering chat",
-                    onTap: () => Get.snackbar(
-                      "Help & Support",
-                      "Live support specialist ready.",
-                      snackPosition: SnackPosition.TOP,
+                    _buildNavTile(
+                      title: "Calendar",
+                      icon: Icons.calendar_month_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.myCalendar),
                     ),
-                  ),
-                  _buildDivider(),
+                    const SizedBox(height: 16),
 
-                  _buildMenuItem(
-                    icon: Icons.logout_rounded,
-                    title: "Sign Out",
-                    subtitle: "Return to workspace authentication",
-                    isDestructive: true,
-                    onTap: () => Get.offAllNamed(AppRoutes.welcome),
-                  ),
-                ],
+                    _buildNavTile(
+                      title: "Attendance History",
+                      icon: Icons.history_rounded,
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildNavTile(
+                      title: "Availability",
+                      icon: Icons.event_available_rounded,
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildNavTile(
+                      title: "Leave Requests",
+                      icon: Icons.event_busy_rounded,
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildNavTile(
+                      title: "Profile & Settings",
+                      icon: Icons.manage_accounts_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.profileAndSettings),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildNavTile(
+                      title: "Device Connectivity",
+                      icon: Icons.important_devices_rounded,
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildNavTile(
+                      title: "Offline Sync",
+                      icon: Icons.cloud_done_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.syncComplete),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildNavTile(
+                      title: "Help & Support",
+                      icon: Icons.help_outline_rounded,
+                      onTap: () {},
+                    ),
+
+                    const SizedBox(height: 24),
+                    const Divider(
+                      color: Color(0x1AC2C6D5),
+                      height: 1,
+                      thickness: 1,
+                    ), // rgba(194, 198, 213, 0.1)
+                    const SizedBox(height: 24),
+
+                    _buildNavTile(
+                      title: "Sign Out",
+                      icon: Icons.logout_rounded,
+                      isDestructive: true,
+                      onTap: () => Get.offAllNamed(AppRoutes.welcome),
+                    ),
+
+                    // System Footer
+                    const SizedBox(height: 48),
+                    Center(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE1E2EB),
+                              borderRadius: BorderRadius.circular(9999),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            "PERFEKTWERK OS V2.4.12-PRO",
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w400,
+                              fontSize: 10,
+                              letterSpacing: 1.0,
+                              color: Color(0xFF727784),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "MACHINE ID: PW-3401-GER",
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w400,
+                              fontSize: 10,
+                              letterSpacing: 1.0,
+                              color: Color(0x80727784), // 50% opacity
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 36),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDivider() {
-    return const Divider(
-      height: 1,
-      thickness: 1,
-      indent: 64,
-      endIndent: 20,
-      color: Color(0xFFF1F5F9),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
+  Widget _buildNavTile({
     required String title,
-    required String subtitle,
+    required IconData icon,
     required VoidCallback onTap,
-    Color? iconColor,
-    bool isHighlighted = false,
     bool isDestructive = false,
   }) {
-    final effectiveColor = isDestructive
-        ? PerfektTheme.alertCritical
-        : (isHighlighted ? PerfektTheme.primaryBlue : PerfektTheme.textDark);
+    final Color borderColor = isDestructive
+        ? const Color(0x0DBA1A1A)
+        : const Color(0x08000000);
+    final Color iconBgColor = isDestructive
+        ? const Color(0x1AFFDAD6)
+        : const Color(0x0D0058BC);
+    final Color primaryColor = isDestructive
+        ? const Color(0xFFBA1A1A)
+        : const Color(0xFF00418F);
+    final Color textColor = isDestructive
+        ? const Color(0xFFBA1A1A)
+        : const Color(0xFF191B22);
+    final Color chevronColor = isDestructive
+        ? const Color(0x4DBA1A1A)
+        : const Color(0xFFC2C6D5);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: PerfektTheme.radiusCard,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: isDestructive
-                    ? const Color(0xFFFEE2E2)
-                    : (isHighlighted
-                          ? const Color(0xFFEFF6FF)
-                          : PerfektTheme.surfaceGrey),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  color: isDestructive
-                      ? PerfektTheme.alertCritical
-                      : (iconColor ??
-                            (isHighlighted
-                                ? PerfektTheme.primaryBlue
-                                : PerfektTheme.textMedium)),
-                  size: 22,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: PerfektTheme.fontBold(15, color: effectiveColor),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: PerfektTheme.fontRegular(
-                      12,
-                      color: PerfektTheme.textLight,
+    return Container(
+      height: 84,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            offset: Offset(0, 1),
+            blurRadius: 2,
+          ), // rgba(0,0,0,0.05)
+          BoxShadow(
+            color: Color(0x0A000000),
+            offset: Offset(0, 8),
+            blurRadius: 20,
+          ), // rgba(0,0,0,0.04)
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: iconBgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: primaryColor, size: 24),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+                    const SizedBox(height: 16, width: 16),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                        color: textColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  isDestructive
+                      ? Icons.logout_rounded
+                      : Icons.chevron_right_rounded,
+                  color: chevronColor,
+                  size: 20,
+                ),
+              ],
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: isDestructive
-                  ? PerfektTheme.alertCritical
-                  : PerfektTheme.textLight,
-              size: 20,
-            ),
-          ],
+          ),
         ),
       ),
     );
