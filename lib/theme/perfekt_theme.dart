@@ -4,10 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 /// Clean and modern design tokens for PerfektWerk OS high-precision construction platform.
 class PerfektTheme {
   // Brand & Palette Colors
-  static const Color primaryBlue = Color(0xFF155DFC);
-  static const Color primaryBlueDark = Color(0xFF0C4BCE);
+  static const Color primaryBlue = Color(0xFF00418F);
+  static const Color primaryBlueDark = Color(0xFF00418F);
   static const Color primaryBlueLight = Color(0xFFD3E4FF);
-  
+
   static const Color backgroundLight = Color(0xFFF9FAFC);
   static const Color surfaceWhite = Color(0xFFFFFFFF);
   static const Color surfaceGrey = Color(0xFFF1F5F9);
@@ -22,8 +22,8 @@ class PerfektTheme {
 
   // Borders & Accents
   static const Color borderLight = Color(0xFFE2E8F0);
-  static const Color borderFocus = Color(0xFF3B82F6);
-  
+  static const Color borderFocus = Color(0xFF00418F);
+
   // Alert Colors
   static const Color alertCritical = Color(0xFFDC2626);
   static const Color alertCriticalBg = Color(0xFFFEF2F2);
@@ -67,9 +67,7 @@ class PerfektTheme {
       fontWeight: FontWeight.w700,
       color: color,
       letterSpacing: -0.5,
-    ).copyWith(
-      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
-    );
+    ).copyWith(fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial']);
   }
 
   static TextStyle fontSemiBold(double size, {Color color = textDark}) {
@@ -78,9 +76,7 @@ class PerfektTheme {
       fontWeight: FontWeight.w600,
       color: color,
       letterSpacing: -0.3,
-    ).copyWith(
-      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
-    );
+    ).copyWith(fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial']);
   }
 
   static TextStyle fontMedium(double size, {Color color = textMedium}) {
@@ -88,9 +84,7 @@ class PerfektTheme {
       fontSize: size,
       fontWeight: FontWeight.w500,
       color: color,
-    ).copyWith(
-      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
-    );
+    ).copyWith(fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial']);
   }
 
   static TextStyle fontRegular(double size, {Color color = textMedium}) {
@@ -98,8 +92,6 @@ class PerfektTheme {
       fontSize: size,
       fontWeight: FontWeight.w400,
       color: color,
-    ).copyWith(
-      fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial'],
-    );
+    ).copyWith(fontFamilyFallback: const ['sans-serif', 'Helvetica', 'Arial']);
   }
 }

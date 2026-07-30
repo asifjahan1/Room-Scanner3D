@@ -6,7 +6,7 @@ import '../../widgets/perfekt/perfekt_button.dart';
 import '../../core/routes/app_routes.dart';
 
 class CreateMaterialController extends GetxController {
-  final RxInt quantity = 12.obs;
+  final RxInt quantity = 0.obs;
 
   void increment() => quantity.value++;
   void decrement() {
@@ -63,141 +63,125 @@ class CreateMaterialRequestScreen extends StatelessWidget {
                   ).copyWith(letterSpacing: 1.0),
                 ),
                 const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: "e.g., Structural Steel Rebar",
+                    hintStyle: PerfektTheme.fontRegular(15, color: PerfektTheme.textLight),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: PerfektTheme.radiusCard,
+                      borderSide: const BorderSide(color: PerfektTheme.borderLight),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: PerfektTheme.radiusCard,
+                      borderSide: const BorderSide(color: PerfektTheme.primaryBlue, width: 1.5),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: PerfektTheme.radiusCard,
-                    border: Border.all(color: PerfektTheme.borderLight),
-                    boxShadow: PerfektTheme.cardShadow,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Timber Slats 200x50",
-                        style: PerfektTheme.fontBold(
-                          16,
-                          color: PerfektTheme.textDark,
-                        ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: PerfektTheme.textLight,
-                        size: 24,
-                      ),
-                    ],
-                  ),
+                  style: PerfektTheme.fontBold(15, color: PerfektTheme.textDark),
                 ),
                 const SizedBox(height: 28),
 
                 // Set Quantity Section
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        "SET QUANTITY",
-                        style: PerfektTheme.fontBold(
-                          11,
-                          color: PerfektTheme.textLight,
-                        ).copyWith(letterSpacing: 1.0),
-                      ),
-                      const SizedBox(height: 14),
-                      PerfektCard(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 20,
+                SizedBox(
+                  width: double.infinity,
+                  child: PerfektCard(
+                    padding: const EdgeInsets.symmetric(vertical: 30),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        GestureDetector(
+                          onTap: controller.decrement,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: PerfektTheme.surfaceGrey,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.remove,
+                                color: PerfektTheme.textDark,
+                                size: 22,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: controller.decrement,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: PerfektTheme.surfaceGrey,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.remove,
-                                    color: PerfektTheme.textDark,
-                                    size: 22,
-                                  ),
+                        Obx(
+                          () => Column(
+                            children: [
+                              Text(
+                                "SET QUANTITY",
+                                style: PerfektTheme.fontBold(
+                                  11,
+                                  color: PerfektTheme.textLight,
+                                ).copyWith(letterSpacing: 1.0),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "${controller.quantity.value}",
+                                style: PerfektTheme.fontBold(
+                                  36,
+                                  color: PerfektTheme.primaryBlue,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 32),
-                            Obx(
-                              () => Column(
-                                children: [
-                                  Text(
-                                    "${controller.quantity.value}",
-                                    style: PerfektTheme.fontBold(
-                                      36,
-                                      color: PerfektTheme.primaryBlue,
-                                    ),
-                                  ),
-                                  Text(
-                                    "units",
-                                    style: PerfektTheme.fontMedium(
-                                      12,
-                                      color: PerfektTheme.textLight,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 32),
-                            GestureDetector(
-                              onTap: controller.increment,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFFBFDBFE),
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.add,
-                                    color: PerfektTheme.primaryBlue,
-                                    size: 22,
-                                  ),
+                              Text(
+                                "units",
+                                style: PerfektTheme.fontMedium(
+                                  12,
+                                  color: PerfektTheme.textLight,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        GestureDetector(
+                          onTap: controller.increment,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.add,
+                                color: PerfektTheme.primaryBlue,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 30),
 
                 // Attachments Action Row
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: _buildAttachButton(
-                        icon: Icons.mic_none_rounded,
-                        label: "Voice note",
+                        icon: Icons.mic_rounded,
+                        iconColor: const Color(0xFFDC2626),
+                        label: "Voice Note",
                         onTap: () => Get.toNamed(AppRoutes.voiceUpdate),
                       ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: _buildAttachButton(
-                        icon: Icons.camera_alt_outlined,
-                        label: "Add photo",
+                        icon: Icons.camera_alt_rounded,
+                        iconColor: PerfektTheme.primaryBlue,
+                        label: "Add Photo",
                         onTap: () => Get.snackbar(
                           "Camera",
                           "Stock material verification image added.",
@@ -268,7 +252,7 @@ class CreateMaterialRequestScreen extends StatelessWidget {
 
                 // Submit Primary Button
                 PerfektButton(
-                  label: "Submit request",
+                  label: "Submit Request",
                   trailingIcon: Icons.arrow_forward_rounded,
                   height: 54,
                   fontSize: 16,
@@ -285,29 +269,35 @@ class CreateMaterialRequestScreen extends StatelessWidget {
 
   Widget _buildAttachButton({
     required IconData icon,
+    required Color iconColor,
     required String label,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: PerfektTheme.radiusCard,
-          border: Border.all(color: PerfektTheme.borderLight),
-          boxShadow: PerfektTheme.cardShadow,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: PerfektTheme.primaryBlue, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: PerfektTheme.fontBold(14, color: PerfektTheme.textDark),
-            ),
-          ],
+      child: AspectRatio(
+        aspectRatio: 1.45,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: PerfektTheme.radiusCard,
+            border: Border.all(color: PerfektTheme.borderLight),
+            boxShadow: PerfektTheme.cardShadow,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: iconColor, size: 38),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: PerfektTheme.fontMedium(
+                  15,
+                  color: PerfektTheme.textDark,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

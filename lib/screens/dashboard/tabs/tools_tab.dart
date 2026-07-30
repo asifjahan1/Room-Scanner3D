@@ -123,7 +123,7 @@ class ToolsTab extends StatelessWidget {
 
                   // Request Material Card
                   GestureDetector(
-                    onTap: () => Get.toNamed(AppRoutes.createMaterialRequest),
+                    onTap: () => Get.toNamed(AppRoutes.materialRequests),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,

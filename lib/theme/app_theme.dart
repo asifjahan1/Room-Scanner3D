@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Brand Colors
-  static const Color primaryBlue = Color(0xFF4A90D9);
+  static const Color primaryBlue = Color(0xFF00418F);
   static const Color accentTeal = Color(0xFF2DD4BF);
   static const Color scannerGreen = Color(0xFF34D399);
   static const Color dangerRed = Color(0xFFEF4444);
@@ -31,19 +31,19 @@ class AppTheme {
 
   // Wireframe Colors
   static const Color wireframeWhite = Color(0xFFE0E0E0);
-  static const Color wireframeBlue = Color(0xFF60A5FA);
+  static const Color wireframeBlue = Color(0xFF00418F);
   static const Color wireframeGlow = Color(0xFF818CF8);
 
   // Scanner UI Colors
   static const Color scanButtonOuter = Color(0xFFFFFFFF);
   static const Color scanButtonInner = Color(0xFFF0F0F0);
-  static const Color doneButtonBg = Color(0xFF6366F1);
+  static const Color doneButtonBg = Color(0xFF00418F);
   static const Color doneButtonText = Color(0xFFFFFFFF);
 
   // Room Label Button Colors
   static const Color labelButtonBg = Color(0xFFF3F4F6);
   static const Color labelButtonText = Color(0xFF374151);
-  static const Color labelButtonSelected = Color(0xFF4A90D9);
+  static const Color labelButtonSelected = Color(0xFF00418F);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -198,16 +198,10 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusPill),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
-      iconTheme: const IconThemeData(
-        color: textPrimary,
-        size: 24,
-      ),
+      iconTheme: const IconThemeData(color: textPrimary, size: 24),
     );
   }
 
@@ -228,9 +222,21 @@ class AppTheme {
       ),
       textTheme: GoogleFonts.interTextTheme(
         const TextTheme(
-          displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: textDarkPrimary),
-          headlineLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: textDarkPrimary),
-          titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textDarkPrimary),
+          displayLarge: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            color: textDarkPrimary,
+          ),
+          headlineLarge: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: textDarkPrimary,
+          ),
+          titleLarge: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: textDarkPrimary,
+          ),
           bodyLarge: TextStyle(fontSize: 16, color: textDarkSecondary),
           bodyMedium: TextStyle(fontSize: 14, color: textDarkSecondary),
         ),
@@ -239,7 +245,11 @@ class AppTheme {
         backgroundColor: bgLight,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textDarkPrimary),
+        titleTextStyle: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: textDarkPrimary,
+        ),
         iconTheme: IconThemeData(color: textDarkPrimary),
       ),
       cardTheme: CardThemeData(

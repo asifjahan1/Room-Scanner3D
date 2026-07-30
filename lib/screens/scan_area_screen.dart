@@ -83,27 +83,71 @@ class ScanAreaScreen extends StatelessWidget {
               const SizedBox(height: 40),
               
               // Top Icon Container
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+              Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(36),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.view_in_ar_outlined,
-                    size: 48,
-                    color: PerfektTheme.primaryBlue,
+                    child: Center(
+                      child: Icon(
+                        Icons.view_in_ar_outlined,
+                        size: 64,
+                        color: PerfektTheme.primaryBlue,
+                      ),
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: -12,
+                    right: -12,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: PerfektTheme.primaryBlue.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.architecture, // Represents drafting/tools
+                          size: 20,
+                          color: PerfektTheme.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -16,
+                    left: -16,
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.view_quilt_outlined, // Represents layout/grid
+                          size: 26,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               
               const SizedBox(height: 40),
