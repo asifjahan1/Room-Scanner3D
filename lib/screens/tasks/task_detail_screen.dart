@@ -141,19 +141,22 @@ class TaskDetailScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: PerfektTheme.radiusCard,
-                    border: const Border(
-                      left: BorderSide(
-                        color: PerfektTheme.primaryBlue,
-                        width: 4,
-                      ),
-                      top: BorderSide(color: PerfektTheme.borderLight),
-                      right: BorderSide(color: PerfektTheme.borderLight),
-                      bottom: BorderSide(color: PerfektTheme.borderLight),
-                    ),
+                    border: Border.all(color: PerfektTheme.borderLight),
                     boxShadow: PerfektTheme.cardShadow,
                   ),
-                  padding: const EdgeInsets.all(18),
-                  child: Row(
+                  child: ClipRRect(
+                    borderRadius: PerfektTheme.radiusCard,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: PerfektTheme.primaryBlue,
+                            width: 4,
+                          ),
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(18),
+                      child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
@@ -194,7 +197,9 @@ class TaskDetailScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
 
                 // Add Photo & Add Update Row
                 Row(

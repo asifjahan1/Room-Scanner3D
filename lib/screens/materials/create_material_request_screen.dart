@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../theme/perfekt_theme.dart';
 import '../../widgets/perfekt/perfekt_card.dart';
 import '../../widgets/perfekt/perfekt_button.dart';
@@ -7,10 +9,29 @@ import '../../core/routes/app_routes.dart';
 
 class CreateMaterialController extends GetxController {
   final RxInt quantity = 0.obs;
+  final Rx<File?> selectedImage = Rx<File?>(null);
 
   void increment() => quantity.value++;
   void decrement() {
     if (quantity.value > 1) quantity.value--;
+  }
+
+  Future<void> pickImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: source);
+      if (image != null) {
+        selectedImage.value = File(image.path);
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Error", 
+        e.toString().contains("MissingPluginException") 
+            ? "Please completely stop and restart the app (rebuild) to apply the new camera plugin." 
+            : e.toString(),
+        duration: const Duration(seconds: 5),
+      );
+    }
   }
 }
 
@@ -178,16 +199,42 @@ class CreateMaterialRequestScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: _buildAttachButton(
+                      child: Obx(() => _buildAttachButton(
                         icon: Icons.camera_alt_rounded,
                         iconColor: PerfektTheme.primaryBlue,
                         label: "Add Photo",
-                        onTap: () => Get.snackbar(
-                          "Camera",
-                          "Stock material verification image added.",
-                          snackPosition: SnackPosition.TOP,
-                        ),
-                      ),
+                        imageFile: controller.selectedImage.value,
+                        onTap: () {
+                          Get.bottomSheet(
+                            Material(
+                              color: Colors.white,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              child: SafeArea(
+                                child: Wrap(
+                                  children: [
+                                    ListTile(
+                                      leading: const Icon(Icons.camera_alt_rounded, color: PerfektTheme.primaryBlue),
+                                      title: Text('Use Camera', style: PerfektTheme.fontMedium(16, color: PerfektTheme.textDark)),
+                                      onTap: () {
+                                        Get.back();
+                                        controller.pickImage(ImageSource.camera);
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(Icons.photo_library_rounded, color: PerfektTheme.primaryBlue),
+                                      title: Text('Gallery', style: PerfektTheme.fontMedium(16, color: PerfektTheme.textDark)),
+                                      onTap: () {
+                                        Get.back();
+                                        controller.pickImage(ImageSource.gallery);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      )),
                     ),
                   ],
                 ),
@@ -272,6 +319,7 @@ class CreateMaterialRequestScreen extends StatelessWidget {
     required Color iconColor,
     required String label,
     required VoidCallback onTap,
+    File? imageFile,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -283,21 +331,29 @@ class CreateMaterialRequestScreen extends StatelessWidget {
             borderRadius: PerfektTheme.radiusCard,
             border: Border.all(color: PerfektTheme.borderLight),
             boxShadow: PerfektTheme.cardShadow,
+            image: imageFile != null
+                ? DecorationImage(
+                    image: FileImage(imageFile),
+                    fit: BoxFit.cover,
+                  )
+                : null,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: iconColor, size: 38),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: PerfektTheme.fontMedium(
-                  15,
-                  color: PerfektTheme.textDark,
-                ),
-              ),
-            ],
-          ),
+          child: imageFile == null
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: iconColor, size: 38),
+                    const SizedBox(height: 12),
+                    Text(
+                      label,
+                      style: PerfektTheme.fontMedium(
+                        15,
+                        color: PerfektTheme.textDark,
+                      ),
+                    ),
+                  ],
+                )
+              : null,
         ),
       ),
     );

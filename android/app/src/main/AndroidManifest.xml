@@ -2,6 +2,14 @@
 
     <!-- Camera permission for AR scanning -->
     <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- Audio recording for Voice Notes -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Storage and Gallery permissions for Image Picker -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <!-- ARCore requires OpenGL ES 3.0+ -->
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
@@ -18,6 +26,11 @@
         <meta-data
             android:name="com.google.ar.core"
             android:value="optional" />
+
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${GOOGLE_MAPS_API_KEY}" />
 
         <activity
             android:name=".MainActivity"

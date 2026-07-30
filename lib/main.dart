@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+// import 'package:get_storage/get_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:io';
+
 import 'theme/app_theme.dart';
 import 'core/di/bindings.dart';
 import 'core/routes/app_routes.dart';
@@ -8,6 +12,19 @@ import 'core/storage/local_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+
+  // Send API key to native iOS via MethodChannel
+  if (Platform.isIOS) {
+    const platform = MethodChannel('maps_config');
+    try {
+      await platform.invokeMethod('setApiKey', {
+        'key': dotenv.env['GOOGLE_MAPS_KEY'],
+      });
+    } catch (e) {
+      debugPrint("Failed to set native maps key: $e");
+    }
+  }
 
   // Protect against default White Screen of Death on iOS builds
   ErrorWidget.builder = (FlutterErrorDetails details) {

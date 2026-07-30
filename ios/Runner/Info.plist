@@ -28,6 +28,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera and LiDAR sensor to scan rooms and create 3D floor plans.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to attach photos to material requests.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the microphone for recording voice notes.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app requires local network access to allow Flutter debugging and Live Hot Reload over wireless network.</string>
 	<key>NSBonjourServices</key>

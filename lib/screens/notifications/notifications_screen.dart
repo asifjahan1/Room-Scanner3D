@@ -4,23 +4,96 @@ import '../../theme/perfekt_theme.dart';
 import '../../widgets/perfekt/perfekt_button.dart';
 import '../../core/routes/app_routes.dart';
 
+class NotificationItem {
+  final int id;
+  final IconData icon;
+  final Color iconBgColor;
+  final Color iconColor;
+  final String title;
+  final String description;
+  final Color? accentBorderColor;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  bool isRead;
+
+  NotificationItem({
+    required this.id,
+    required this.icon,
+    required this.iconBgColor,
+    required this.iconColor,
+    required this.title,
+    required this.description,
+    this.accentBorderColor,
+    this.actionLabel,
+    this.onAction,
+    this.isRead = false,
+  });
+}
+
 class NotificationsController extends GetxController {
   final RxString selectedFilter = 'unread'.obs;
-  final RxInt unreadCount = 3.obs;
+
+  final RxList<NotificationItem> notifications = <NotificationItem>[
+    NotificationItem(
+      id: 1,
+      icon: Icons.assignment_turned_in_outlined,
+      iconBgColor: const Color(0xFFEFF6FF),
+      iconColor: PerfektTheme.primaryBlue,
+      title: "Material Request Approved",
+      description: "Your request for 'Premium Concrete Mix' has been approved for delivery.",
+      actionLabel: "Open",
+      onAction: () => Get.toNamed(AppRoutes.materialRequests),
+    ),
+    NotificationItem(
+      id: 2,
+      icon: Icons.check_circle_outline_rounded,
+      iconBgColor: const Color(0xFFEFF6FF),
+      iconColor: PerfektTheme.primaryBlue,
+      title: "Measurement Approved",
+      description: "Foreman Sarah approved 'Kitchen Wall' measurement.",
+      accentBorderColor: const Color(0xFF10B981),
+    ),
+    NotificationItem(
+      id: 3,
+      icon: Icons.cancel_rounded,
+      iconBgColor: const Color(0xFFFEE2E2),
+      iconColor: const Color(0xFFDC2626),
+      title: "Measurement Rejected",
+      description: "Foreman Sarah rejected 'Column B-12' measurement.",
+      actionLabel: "Redo",
+      onAction: () => Get.toNamed(AppRoutes.scanning),
+    ),
+    NotificationItem(
+      id: 4,
+      icon: Icons.work_outline_rounded,
+      iconBgColor: const Color(0xFFEFF6FF),
+      iconColor: PerfektTheme.primaryBlue,
+      title: "New Job Assigned",
+      description: "You have been assigned to 'Skyline Apartments - Zone B'.",
+      actionLabel: "Open",
+      onAction: () => Get.toNamed(AppRoutes.jobDetails),
+    ),
+  ].obs;
+
+  int get unreadCount => notifications.where((n) => !n.isRead).length;
+
+  List<NotificationItem> get filteredNotifications {
+    if (selectedFilter.value == 'unread') {
+      return notifications.where((n) => !n.isRead).toList();
+    }
+    return notifications;
+  }
 
   void selectFilter(String filter) {
     selectedFilter.value = filter;
   }
 
   void markAllRead() {
-    unreadCount.value = 0;
-    Get.snackbar(
-      "Notifications",
-      "All notifications marked as read.",
-      snackPosition: SnackPosition.TOP,
-      backgroundColor: Colors.white,
-      colorText: PerfektTheme.textDark,
-    );
+    for (var n in notifications) {
+      n.isRead = true;
+    }
+    selectedFilter.value = 'all'; // Switch to 'All' so they can see the faded items instead of an empty screen
+    notifications.refresh();
   }
 }
 
@@ -92,7 +165,7 @@ class NotificationsScreen extends StatelessWidget {
                   () => Row(
                     children: [
                       _buildFilterPill(
-                        label: "Unread (${controller.unreadCount.value})",
+                        label: "Unread (${controller.unreadCount})",
                         isSelected: controller.selectedFilter.value == 'unread',
                         onTap: () => controller.selectFilter('unread'),
                       ),
@@ -107,63 +180,44 @@ class NotificationsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Card 1: Material Request Approved
-                _buildNotificationCard(
-                  icon: Icons.assignment_turned_in_outlined,
-                  iconBgColor: const Color(0xFFEFF6FF),
-                  iconColor: PerfektTheme.primaryBlue,
-                  title: "Material Request Approved",
-                  description:
-                      "Your request for 'Premium Concrete Mix' has been approved for delivery.",
-                  actionButton: PerfektButton(
-                    label: "Open",
-                    onPressed: () => Get.toNamed(AppRoutes.materialRequests),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // Notifications List
+                Obx(() {
+                  final list = controller.filteredNotifications;
+                  if (list.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 40),
+                        child: Text(
+                          "No notifications here.",
+                          style: PerfektTheme.fontMedium(15, color: PerfektTheme.textLight),
+                        ),
+                      ),
+                    );
+                  }
 
-                // Card 2: Measurement Approved (With Green Border accent on Left!)
-                _buildNotificationCard(
-                  icon: Icons.check_circle_outline_rounded,
-                  iconBgColor: const Color(0xFFEFF6FF),
-                  iconColor: PerfektTheme.primaryBlue,
-                  title: "Measurement Approved",
-                  description:
-                      "Foreman Sarah approved 'Kitchen Wall' measurement.",
-                  accentBorderColor: const Color(
-                    0xFF10B981,
-                  ), // Green Left Border
-                ),
-                const SizedBox(height: 16),
-
-                // Card 3: Measurement Rejected
-                _buildNotificationCard(
-                  icon: Icons.cancel_rounded,
-                  iconBgColor: const Color(0xFFFEE2E2),
-                  iconColor: const Color(0xFFDC2626), // Alert Red
-                  title: "Measurement Rejected",
-                  description:
-                      "Foreman Sarah rejected 'Column B-12' measurement.",
-                  actionButton: PerfektButton(
-                    label: "Redo",
-                    onPressed: () => Get.toNamed(AppRoutes.scanning),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Card 4: New Job Assigned
-                _buildNotificationCard(
-                  icon: Icons.work_outline_rounded,
-                  iconBgColor: const Color(0xFFEFF6FF),
-                  iconColor: PerfektTheme.primaryBlue,
-                  title: "New Job Assigned",
-                  description:
-                      "You have been assigned to 'Skyline Apartments - Zone B'.",
-                  actionButton: PerfektButton(
-                    label: "Open",
-                    onPressed: () => Get.toNamed(AppRoutes.jobDetails),
-                  ),
-                ),
+                  return Column(
+                    children: list.map((item) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildNotificationCard(
+                          icon: item.icon,
+                          iconBgColor: item.iconBgColor,
+                          iconColor: item.iconColor,
+                          title: item.title,
+                          description: item.description,
+                          isRead: item.isRead,
+                          accentBorderColor: item.accentBorderColor,
+                          actionButton: item.actionLabel != null
+                              ? PerfektButton(
+                                  label: item.actionLabel!,
+                                  onPressed: item.onAction ?? () {},
+                                )
+                              : null,
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }),
                 const SizedBox(height: 36),
               ],
             ),
@@ -205,15 +259,16 @@ class NotificationsScreen extends StatelessWidget {
     required Color iconColor,
     required String title,
     required String description,
+    bool isRead = false,
     Color? accentBorderColor,
     Widget? actionButton,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isRead ? const Color(0xFFF1F5F9) : Colors.white,
         borderRadius: PerfektTheme.radiusCard,
-        border: Border.all(color: PerfektTheme.borderLight),
-        boxShadow: PerfektTheme.cardShadow,
+        border: Border.all(color: isRead ? Colors.transparent : PerfektTheme.borderLight),
+        boxShadow: isRead ? [] : PerfektTheme.cardShadow,
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -259,7 +314,7 @@ class NotificationsScreen extends StatelessWidget {
                                 title,
                                 style: PerfektTheme.fontBold(
                                   16,
-                                  color: PerfektTheme.textDark,
+                                  color: isRead ? PerfektTheme.textMedium : PerfektTheme.textDark,
                                 ),
                               ),
                               const SizedBox(height: 6),

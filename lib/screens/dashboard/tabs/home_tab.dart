@@ -4,6 +4,7 @@ import '../../../theme/perfekt_theme.dart';
 import '../../../widgets/perfekt/perfekt_button.dart';
 import '../../../widgets/perfekt/perfekt_card.dart';
 import '../../../controllers/dashboard_controller.dart';
+import '../../../controllers/weather_controller.dart';
 import '../../../core/routes/app_routes.dart';
 
 class HomeTab extends StatelessWidget {
@@ -12,6 +13,7 @@ class HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<DashboardController>();
+    final weatherController = Get.put(WeatherController());
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -217,15 +219,22 @@ class HomeTab extends StatelessWidget {
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.cloud_queue_rounded,
-                      color: PerfektTheme.primaryBlue,
-                      size: 26,
-                    ),
+                    child: Obx(() {
+                      IconData iconData = Icons.cloud_queue_rounded;
+                      final type = weatherController.currentIconType.value;
+                      if (type == 'sun') iconData = Icons.wb_sunny_rounded;
+                      if (type == 'rain') iconData = Icons.water_drop_rounded;
+                      if (type == 'snow') iconData = Icons.ac_unit_rounded;
+                      return Icon(
+                        iconData,
+                        color: PerfektTheme.primaryBlue,
+                        size: 26,
+                      );
+                    }),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
-                    child: Column(
+                    child: Obx(() => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         RichText(
@@ -235,9 +244,9 @@ class HomeTab extends StatelessWidget {
                               color: PerfektTheme.textDark,
                             ),
                             children: [
-                              const TextSpan(text: '6°C  '),
+                              TextSpan(text: '${weatherController.currentTemp.value}C  '),
                               TextSpan(
-                                text: 'LIGHT RAIN',
+                                text: weatherController.currentCondition.value.toUpperCase(),
                                 style: PerfektTheme.fontSemiBold(
                                   13,
                                   color: PerfektTheme.textMedium,
@@ -248,14 +257,16 @@ class HomeTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          'Site condition: Wet, slippery soil.',
+                          'Site condition: ${weatherController.siteConditionDesc.value}',
                           style: PerfektTheme.fontRegular(
                             12,
                             color: PerfektTheme.textLight,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                    ),
+                    )),
                   ),
                   const Icon(
                     Icons.chevron_right_rounded,
