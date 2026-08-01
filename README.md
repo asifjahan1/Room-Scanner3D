@@ -23,7 +23,7 @@ We have successfully validated our core measurement engine in simulated and cont
 #### System Architecture Overview
 
 <img width="784" height="999" alt="arch" src="https://github.com/user-attachments/assets/ff3625a0-7293-4df9-ab23-d7e51bde4b4d" />
-
+![System Architecture Overview](images/architecture.png)
 
 #### Data Flow: Layer 1 to Layer 4
 - **Layer 1 (AR Tracking & Data Ingestion):** High-frequency ingestion of IMU data and RGB camera frames. Initial feature tracking and spatial anchoring are performed to establish the device's relative position.
@@ -78,4 +78,4 @@ To ensure commercial viability and trust, our billing architecture for spatial d
 #### Human-in-the-Loop Verification Flow
 
 <img width="514" height="1286" alt="flow" src="https://github.com/user-attachments/assets/d5c14404-1e96-4f25-a2de-e19018374b29" />
-
+![Human-in-the-Loop Verification Flow](images/verification-flow.png)
