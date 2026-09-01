@@ -34,6 +34,9 @@ We have successfully validated our core measurement engine in simulated and cont
 
 ### 3. The Non-LiDAR Approach (Crucial)
 
+<img width="590" height="1280" alt="Room Scanner" src="https://github.com/user-attachments/assets/803a398a-2bf1-4f79-9dce-d072febd722b" />
+
+
 Our strategic approach for standard Android and iOS devices (Tier B) bypasses the need for hardware LiDAR. We bridge this hardware gap entirely through advanced software logic and edge AI.
 
 **Monocular Depth via NPU-Based ML Inference**
